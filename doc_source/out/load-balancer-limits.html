@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <title>Quotas for your Network Load Balancers&lt;a name&equals;&quot;load-balancer-limits&quot;&gt;&lt;&sol;a&gt;</title>
+        <style>
+/* From extension vscode.github */
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+
+.vscode-dark img[src$=\#gh-light-mode-only],
+.vscode-light img[src$=\#gh-dark-mode-only] {
+	display: none;
+}
+
+</style>
+        
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/markdown.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/highlight.css">
+<style>
+            body {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe WPC', 'Segoe UI', system-ui, 'Ubuntu', 'Droid Sans', sans-serif;
+                font-size: 14px;
+                line-height: 1.6;
+            }
+        </style>
+        <style>
+.task-list-item {
+    list-style-type: none;
+}
+
+.task-list-item-checkbox {
+    margin-left: -20px;
+    vertical-align: middle;
+    pointer-events: none;
+}
+</style>
+        
+    </head>
+    <body class="vscode-body vscode-light">
+        <h1 id="quotas-for-your-network-load-balancers">Quotas for your Network Load Balancers<a name="load-balancer-limits"></a></h1>
+<p>Your AWS account has default quotas, formerly referred to as limits, for each AWS service. Unless otherwise noted, each quota is Region-specific. You can request increases for some quotas, and other quotas cannot be increased.</p>
+<p>To view the quotas for your Network Load Balancers, open the <a href="https://console.aws.amazon.com/servicequotas/home">Service Quotas console</a>. In the navigation pane, choose <strong>AWS services</strong> and select <strong>Elastic Load Balancing</strong>. You can also use the <a href="https://docs.aws.amazon.com/cli/latest/reference/elbv2/describe-account-limits.html">describe-account-limits</a> (AWS CLI) command for Elastic Load Balancing.</p>
+<p>To request a quota increase, see <a href="https://docs.aws.amazon.com/servicequotas/latest/userguide/request-quota-increase.html">Requesting a quota increase</a> in the <em>Service Quotas User Guide</em>. If the quota is not yet available in Service Quotas, use the <a href="https://console.aws.amazon.com/support/home#/case/create?issueType=service-limit-increase&amp;limitType=service-code-elastic-load-balancers">Elastic Load Balancing limit increase form</a>.</p>
+<p><strong>Load balancer</strong><br>
+Your AWS account has the following quotas related to Network Load Balancers.</p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Default</th>
+<th>Adjustable</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Certificates per Network Load Balancer</td>
+<td>25</td>
+<td><a href="https://console.aws.amazon.com/servicequotas/home/services/elasticloadbalancing/quotas/L-52964454">Yes</a></td>
+</tr>
+<tr>
+<td>Listeners per Network Load Balancer</td>
+<td>50</td>
+<td>No</td>
+</tr>
+<tr>
+<td>Network Load Balancer ENIs per VPC</td>
+<td>1,200 *</td>
+<td><a href="https://console.aws.amazon.com/servicequotas/home/services/elasticloadbalancing/quotas/L-23568085">Yes</a></td>
+</tr>
+<tr>
+<td>Network Load Balancers per Region</td>
+<td>50</td>
+<td><a href="https://console.aws.amazon.com/servicequotas/home/services/elasticloadbalancing/quotas/L-69A177A2">Yes</a></td>
+</tr>
+<tr>
+<td>Target Groups per Action per Network Load Balancer</td>
+<td>1</td>
+<td>No</td>
+</tr>
+<tr>
+<td>Targets per Availability Zone per Network Load Balancer</td>
+<td>500 †</td>
+<td><a href="https://console.aws.amazon.com/servicequotas/home/services/elasticloadbalancing/quotas/L-B211E961">Yes</a></td>
+</tr>
+<tr>
+<td>Targets per Network Load Balancer</td>
+<td>3,000</td>
+<td><a href="https://console.aws.amazon.com/servicequotas/home/services/elasticloadbalancing/quotas/L-EEF1AD04">Yes</a></td>
+</tr>
+</tbody>
+</table>
+<p><strong>*</strong> Each Network Load Balancer uses one network interface per zone. The quota is set at the VPC level. When sharing subnets or VPCs, the usage is calculated across all tenants.</p>
+<p>† If a target is registered with <em>N</em> target groups, it counts as <em>N</em> targets toward this limit. Each Application Load Balancer that is a target of the Network Load Balancer counts as 50 targets if cross-zone load balancing is disabled or 100 targets if cross-zone load balancing is enabled.</p>
+<p><strong>Target groups</strong><br>
+The following quotas are for target groups.</p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Default</th>
+<th>Adjustable</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Target Groups per Region</td>
+<td>3,000 **</td>
+<td><a href="https://console.aws.amazon.com/servicequotas/home/services/elasticloadbalancing/quotas/L-B22855CB">Yes</a></td>
+</tr>
+<tr>
+<td>Targets per Target Group per Region (instances or IP addresses)</td>
+<td>1,000</td>
+<td><a href="https://console.aws.amazon.com/servicequotas/home/services/elasticloadbalancing/quotas/L-A0D0B863">Yes</a></td>
+</tr>
+<tr>
+<td>Targets per Target Group per Region (Application Load Balancers)</td>
+<td>1</td>
+<td>No</td>
+</tr>
+</tbody>
+</table>
+<p><strong>**</strong> This quota is shared by Application Load Balancers and Network Load Balancers.</p>
+
+        
+        
+    </body>
+    </html>

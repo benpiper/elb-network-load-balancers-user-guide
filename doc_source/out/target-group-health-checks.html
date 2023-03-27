@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <title>Health checks for your target groups&lt;a name&equals;&quot;target-group-health-checks&quot;&gt;&lt;&sol;a&gt;</title>
+        <style>
+/* From extension vscode.github */
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+
+.vscode-dark img[src$=\#gh-light-mode-only],
+.vscode-light img[src$=\#gh-dark-mode-only] {
+	display: none;
+}
+
+</style>
+        
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/markdown.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/highlight.css">
+<style>
+            body {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe WPC', 'Segoe UI', system-ui, 'Ubuntu', 'Droid Sans', sans-serif;
+                font-size: 14px;
+                line-height: 1.6;
+            }
+        </style>
+        <style>
+.task-list-item {
+    list-style-type: none;
+}
+
+.task-list-item-checkbox {
+    margin-left: -20px;
+    vertical-align: middle;
+    pointer-events: none;
+}
+</style>
+        
+    </head>
+    <body class="vscode-body vscode-light">
+        <h1 id="health-checks-for-your-target-groups">Health checks for your target groups<a name="target-group-health-checks"></a></h1>
+<p>You register your targets with one or more target groups. The load balancer starts routing requests to a newly registered target as soon as the registration process completes. It can take a few minutes for the registration process to complete and health checks to start.</p>
+<p>Network Load Balancers use active and passive health checks to determine whether a target is available to handle requests. By default, each load balancer node routes requests only to the healthy targets in its Availability Zone. If you enable cross-zone load balancing, each load balancer node routes requests to the healthy targets in all enabled Availability Zones. For more information, see <a href="network-load-balancers.md#cross-zone-load-balancing">Cross-zone load balancing</a>.</p>
+<p>With active health checks, the load balancer periodically sends a request to each registered target to check its status. Each load balancer node checks the health of each target, using the health check settings for the target group with which the target is registered. After each health check is completed, the load balancer node closes the connection that was established for the health check.</p>
+<p>With passive health checks, the load balancer observes how targets respond to connections. Passive health checks enable the load balancer to detect an unhealthy target before it is reported as unhealthy by the active health checks. You cannot disable, configure, or monitor passive health checks. Passive health checks are not supported for UDP traffic.</p>
+<p>If a target becomes unhealthy, the load balancer sends a TCP RST for packets received on the client connections associated with the target, unless the unhealthy target triggers the load balancer to fail open.</p>
+<p>If target groups don't have a healthy target in an enabled Availability Zone, we remove the IP address for the corresponding subnet from DNS so that requests cannot be routed to targets in that Availability Zone. If all targets fail health checks at the same time in all enabled Availability Zones, the load balancer fails open. The effect of the fail open is to allow traffic to all targets in all enabled Availability Zones, regardless of their health status.</p>
+<p>If a target group is configured with HTTPS health checks, its registered targets fail health checks if they support only TLS 1.3. These targets must support an earlier version of TLS, such as TLS 1.2.</p>
+<p>For HTTP or HTTPS health check requests, the host header contains the IP address of the load balancer node and the listener port, not the IP address of the target and the health check port.</p>
+<p>If you add a TLS listener to your Network Load Balancer, we perform a listener connectivity test. As TLS termination also terminates a TCP connection, a new TCP connection is established between your load balancer and your targets. Therefore, you might see the TCP pings for this test sent from your load balancer to the targets that are registered with your TLS listener. You can identify these TCP pings because they have the source IP address of your Network Load Balancer and the connections do not contain data packets.</p>
+<p>For a UDP service, target availability can be tested using non-UDP health checks on your target group. You can use any available health check (TCP, HTTP, or HTTPS), and any port on your target to verify the availability of a UDP service. If the service receiving the health check fails, your target is considered unavailable. To improve the accuracy of health checks for a UDP service, configure the service listening to the health check port to track the status of your UDP service and fail the health check if the service is unavailable.</p>
+<h2 id="health-check-settings">Health check settings<a name="health-check-settings"></a></h2>
+<p>You configure active health checks for the targets in a target group using the following settings. If the health checks exceed <strong>UnhealthyThresholdCount</strong> consecutive failures, the load balancer takes the target out of service. When the health checks exceed <strong>HealthyThresholdCount</strong> consecutive successes, the load balancer puts the target back in service.</p>
+<table>
+<thead>
+<tr>
+<th>Setting</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>HealthCheckProtocol</strong></td>
+<td>The protocol the load balancer uses when performing health checks on targets. The possible protocols are HTTP, HTTPS, and TCP. The default is the TCP protocol. If the target type is <code>alb</code>, the supported health check protocols are HTTP and HTTPS.</td>
+<td>TCP</td>
+</tr>
+<tr>
+<td><strong>HealthCheckPort</strong></td>
+<td>The port the load balancer uses when performing health checks on targets. The default is to use the port on which each target receives traffic from the load balancer.</td>
+<td>Port on which each target receives traffic from the load balancer.</td>
+</tr>
+<tr>
+<td><strong>HealthCheckPath</strong></td>
+<td>[HTTP/HTTPS health checks] The ping path that is the destination on the targets for health checks. The default is /.</td>
+<td>/</td>
+</tr>
+<tr>
+<td><strong>HealthCheckTimeoutSeconds</strong></td>
+<td>The amount of time, in seconds, during which no response from a target means a failed health check. The range is 2–120 seconds. The default values are 6 seconds for HTTP and 10 seconds for TCP and HTTPS health checks.</td>
+<td>6 seconds for HTTP health checks and 10 seconds for TCP and HTTPS health checks.</td>
+</tr>
+<tr>
+<td><strong>HealthCheckIntervalSeconds</strong></td>
+<td>The approximate amount of time, in seconds, between health checks of an individual target. The range is 5–300 seconds. The default is 30 seconds.  Health checks for a Network Load Balancer are distributed and use a consensus mechanism to determine target health. Therefore, targets receive more than the configured number of health checks. To reduce the impact to your targets if you are using HTTP health checks, use a simpler destination on the targets, such as a static HTML file, or switch to TCP health checks.</td>
+<td>30 seconds</td>
+</tr>
+<tr>
+<td><strong>HealthyThresholdCount</strong></td>
+<td>The number of consecutive successful health checks required before considering an unhealthy target healthy. The range is 2–10. The default is 5.</td>
+<td>5</td>
+</tr>
+<tr>
+<td><strong>UnhealthyThresholdCount</strong></td>
+<td>The number of consecutive failed health checks required before considering a target unhealthy. The range is 2–10. The default is 2.</td>
+<td>2</td>
+</tr>
+<tr>
+<td><strong>Matcher</strong></td>
+<td>[HTTP/HTTPS health checks] The HTTP codes to use when checking for a successful response from a target. The range is 200 to 599. The default is 200-399.</td>
+<td>200-399</td>
+</tr>
+</tbody>
+</table>
+<h2 id="target-health-status">Target health status<a name="target-health-states"></a></h2>
+<p>Before the load balancer sends a health check request to a target, you must register it with a target group, specify its target group in a listener rule, and ensure that the Availability Zone of the target is enabled for the load balancer.</p>
+<p>The following table describes the possible values for the health status of a registered target.</p>
+<table>
+<thead>
+<tr>
+<th>Value</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>initial</code></td>
+<td>The load balancer is in the process of registering the target or performing the initial health checks on the target. Related reason codes: <code>Elb.RegistrationInProgress</code> | <code>Elb.InitialHealthChecking</code></td>
+</tr>
+<tr>
+<td><code>healthy</code></td>
+<td>The target is healthy. Related reason codes: None</td>
+</tr>
+<tr>
+<td><code>unhealthy</code></td>
+<td>The target did not respond to a health check or failed the health check. Related reason code: <code>Target.FailedHealthChecks</code></td>
+</tr>
+<tr>
+<td><code>unused</code></td>
+<td>The target is not registered with a target group, the target group is not used in a listener rule, the target is in an Availability Zone that is not enabled, or the target is in the stopped or terminated state. Related reason codes: <code>Target.NotRegistered</code> | <code>Target.NotInUse</code> | <code>Target.InvalidState</code> | <code>Target.IpUnusable</code></td>
+</tr>
+<tr>
+<td><code>draining</code></td>
+<td>The target is deregistering and connection draining is in process. Related reason code: <code>Target.DeregistrationInProgress</code></td>
+</tr>
+<tr>
+<td><code>unavailable</code></td>
+<td>Target health is unavailable. Related reason code: <code>Elb.InternalError</code></td>
+</tr>
+</tbody>
+</table>
+<h2 id="health-check-reason-codes">Health check reason codes<a name="target-health-reason-codes"></a></h2>
+<p>If the status of a target is any value other than <code>Healthy</code>, the API returns a reason code and a description of the issue, and the console displays the same description in a tooltip. Note that reason codes that begin with <code>Elb</code> originate on the load balancer side and reason codes that begin with <code>Target</code> originate on the target side.</p>
+<table>
+<thead>
+<tr>
+<th>Reason code</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Elb.InitialHealthChecking</code></td>
+<td>Initial health checks in progress</td>
+</tr>
+<tr>
+<td><code>Elb.InternalError</code></td>
+<td>Health checks failed due to an internal error</td>
+</tr>
+<tr>
+<td><code>Elb.RegistrationInProgress</code></td>
+<td>Target registration is in progress</td>
+</tr>
+<tr>
+<td><code>Target.DeregistrationInProgress</code></td>
+<td>Target deregistration is in progress</td>
+</tr>
+<tr>
+<td><code>Target.FailedHealthChecks</code></td>
+<td>Health checks failed</td>
+</tr>
+<tr>
+<td><code>Target.InvalidState</code></td>
+<td>Target is in the stopped state Target is in the terminated state Target is in the terminated or stopped state Target is in an invalid state</td>
+</tr>
+<tr>
+<td><code>Target.IpUnusable</code></td>
+<td>The IP address cannot be used as a target, as it is in use by a load balancer</td>
+</tr>
+<tr>
+<td><code>Target.NotInUse</code></td>
+<td>Target group is not configured to receive traffic from the load balancer Target is in an Availability Zone that is not enabled for the load balancer</td>
+</tr>
+<tr>
+<td><code>Target.NotRegistered</code></td>
+<td>Target is not registered to the target group</td>
+</tr>
+</tbody>
+</table>
+<h2 id="check-the-health-of-your-targets">Check the health of your targets<a name="check-target-health"></a></h2>
+<p>You can check the health status of the targets registered with your target groups.</p>
+<hr>
+<h4 id="-new-console-">[ New console ]</h4>
+<p><strong>To check the health of your targets using the new console</strong></p>
+<ol>
+<li>
+<p>Open the Amazon EC2 console at <a href="https://console.aws.amazon.com/ec2/">https://console.aws.amazon.com/ec2/</a>.</p>
+</li>
+<li>
+<p>In the navigation pane, under <strong>LOAD BALANCING</strong>, choose <strong>Target Groups</strong>.</p>
+</li>
+<li>
+<p>Choose the name of the target group to open its details page.</p>
+</li>
+<li>
+<p>The <strong>Details</strong> pane displays the total number of targets, plus the number of targets for each health status.</p>
+</li>
+<li>
+<p>On the <strong>Targets</strong> tab, the <strong>Health status</strong> column indicates the status of each target.</p>
+</li>
+<li>
+<p>If the status of a target is any value other than <code>Healthy</code>, the <strong>Health status details</strong> column contains more information.</p>
+</li>
+</ol>
+<hr>
+<h4 id="-old-console-">[ Old console ]</h4>
+<p><strong>To check the health of your targets using the old console</strong></p>
+<ol>
+<li>
+<p>Open the Amazon EC2 console at <a href="https://console.aws.amazon.com/ec2/">https://console.aws.amazon.com/ec2/</a>.</p>
+</li>
+<li>
+<p>In the navigation pane, under <strong>LOAD BALANCING</strong>, choose <strong>Target Groups</strong>.</p>
+</li>
+<li>
+<p>Select the target group.</p>
+</li>
+<li>
+<p>Choose <strong>Targets</strong>, and view the status of each target in the <strong>Status</strong> column. If the status is any value other than <code>Healthy</code>, view the tooltip for more information.</p>
+</li>
+</ol>
+<hr>
+<p><strong>To check the health of your targets using the AWS CLI</strong><br>
+Use the <a href="https://docs.aws.amazon.com/cli/latest/reference/elbv2/describe-target-health.html">describe-target-health</a> command. The output of this command contains the target health state. It includes a reason code if the status is any value other than <code>Healthy</code>.</p>
+<p><strong>To receive email notifications about unhealthy targets</strong><br>
+Use CloudWatch alarms to trigger a Lambda function to send details about unhealthy targets. For step-by-step instructions, see the following blog post: <a href="http://aws.amazon.com/blogs/networking-and-content-delivery/identifying-unhealthy-targets-of-elastic-load-balancer/">Identifying unhealthy targets of your load balancer</a>.</p>
+<h2 id="modify-the-health-check-settings-of-a-target-group">Modify the health check settings of a target group<a name="modify-health-check-settings"></a></h2>
+<p>You can modify the health check settings for your target group at any time.</p>
+<hr>
+<h4 id="-new-console--1">[ New console ]</h4>
+<p><strong>To modify health check settings for a target group using the new console</strong></p>
+<ol>
+<li>
+<p>Open the Amazon EC2 console at <a href="https://console.aws.amazon.com/ec2/">https://console.aws.amazon.com/ec2/</a>.</p>
+</li>
+<li>
+<p>In the navigation pane, under <strong>LOAD BALANCING</strong>, choose <strong>Target Groups</strong>.</p>
+</li>
+<li>
+<p>Choose the name of the target group to open its details page.</p>
+</li>
+<li>
+<p>On the <strong>Health checks</strong> tab, choose <strong>Edit</strong>.</p>
+</li>
+<li>
+<p>On the <strong>Edit health check settings</strong> page, modify the settings as needed, and then choose <strong>Save changes</strong>.</p>
+</li>
+</ol>
+<hr>
+<h4 id="-old-console--1">[ Old console ]</h4>
+<p><strong>To modify health check settings for a target group using the old console</strong></p>
+<ol>
+<li>
+<p>Open the Amazon EC2 console at <a href="https://console.aws.amazon.com/ec2/">https://console.aws.amazon.com/ec2/</a>.</p>
+</li>
+<li>
+<p>In the navigation pane, under <strong>LOAD BALANCING</strong>, choose <strong>Target Groups</strong>.</p>
+</li>
+<li>
+<p>Select the target group.</p>
+</li>
+<li>
+<p>Choose <strong>Health checks</strong>, <strong>Edit</strong>.</p>
+</li>
+<li>
+<p>On the <strong>Edit target group</strong> page, modify the settings as needed, and then choose <strong>Save</strong>.</p>
+</li>
+</ol>
+<hr>
+<p><strong>To modify health check settings for a target group using the AWS CLI</strong><br>
+Use the <a href="https://docs.aws.amazon.com/cli/latest/reference/elbv2/modify-target-group.html">modify-target-group</a> command.</p>
+
+        
+        
+    </body>
+    </html>

@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <title>Access logs for your Network Load Balancer&lt;a name&equals;&quot;load-balancer-access-logs&quot;&gt;&lt;&sol;a&gt;</title>
+        <style>
+/* From extension vscode.github */
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+
+.vscode-dark img[src$=\#gh-light-mode-only],
+.vscode-light img[src$=\#gh-dark-mode-only] {
+	display: none;
+}
+
+</style>
+        
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/markdown.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/highlight.css">
+<style>
+            body {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe WPC', 'Segoe UI', system-ui, 'Ubuntu', 'Droid Sans', sans-serif;
+                font-size: 14px;
+                line-height: 1.6;
+            }
+        </style>
+        <style>
+.task-list-item {
+    list-style-type: none;
+}
+
+.task-list-item-checkbox {
+    margin-left: -20px;
+    vertical-align: middle;
+    pointer-events: none;
+}
+</style>
+        
+    </head>
+    <body class="vscode-body vscode-light">
+        <h1 id="access-logs-for-your-network-load-balancer">Access logs for your Network Load Balancer<a name="load-balancer-access-logs"></a></h1>
+<p>Elastic Load Balancing provides access logs that capture detailed information about the TLS requests sent to your Network Load Balancer. You can use these access logs to analyze traffic patterns and troubleshoot issues.</p>
+<p><strong>Important</strong><br>
+Access logs are created only if the load balancer has a TLS listener and they contain information only about TLS requests.</p>
+<p>Access logging is an optional feature of Elastic Load Balancing that is disabled by default. After you enable access logging for your load balancer, Elastic Load Balancing captures the logs as compressed files and stores them in the Amazon S3 bucket that you specify. You can disable access logging at any time.</p>
+<p>You can enable server-side encryption with Amazon S3-managed encryption keys (SSE-S3), or using Key Management Service with Customer Managed Keys (SSE-KMS CMK) for your S3 bucket. Each access log file is automatically encrypted before it is stored in your S3 bucket and decrypted when you access it. You do not need to take any action as there is no difference in the way you access encrypted or unencrypted log files. Each log file is encrypted with a unique key, which is itself encrypted with a master key that is regularly rotated. For more information, see <a href="https://docs.aws.amazon.com/AmazonS3/latest/userguide/specifying-s3-encryption.html">Specifying Amazon S3 encryption (SSE-S3)</a> and <a href="https://docs.aws.amazon.com/AmazonS3/latest/userguide/specifying-kms-encryption.html">Specifying server-side encryption with AWS KMS (SSE-KMS)</a> in the <em>Amazon S3 User Guide</em>.</p>
+<p>There is no additional charge for access logs. You are charged storage costs for Amazon S3, but not charged for the bandwidth used by Elastic Load Balancing to send log files to Amazon S3. For more information about storage costs, see <a href="https://aws.amazon.com/s3/pricing/">Amazon S3 Pricing</a>.</p>
+<h2 id="access-log-files">Access log files<a name="access-log-file-format"></a></h2>
+<p>Elastic Load Balancing publishes a log file for each load balancer node every 5 minutes. Log delivery is eventually consistent. The load balancer can deliver multiple logs for the same period. This usually happens if the site has high traffic.</p>
+<p>The file names of the access logs use the following format:</p>
+<pre><code>bucket[/prefix]/AWSLogs/aws-account-id/elasticloadbalancing/region/yyyy/mm/dd/aws-account-id_elasticloadbalancing_region_net.load-balancer-id_end-time_random-string.log.gz
+</code></pre>
+<p><em>bucket</em><br>
+The name of the S3 bucket.</p>
+<p><em>prefix</em><br>
+The prefix (logical hierarchy) in the bucket. If you don't specify a prefix, the logs are placed at the root level of the bucket.</p>
+<p><em>aws-account-id</em><br>
+The AWS account ID of the owner.</p>
+<p><em>region</em><br>
+The region for your load balancer and S3 bucket.</p>
+<p><em>yyyy</em>/<em>mm</em>/<em>dd</em><br>
+The date that the log was delivered.</p>
+<p><em>load-balancer-id</em><br>
+The resource ID of the load balancer. If the resource ID contains any forward slashes (/), they are replaced with periods (.).</p>
+<p><em>end-time</em><br>
+The date and time that the logging interval ended. For example, an end time of 20181220T2340Z contains entries for requests made between 23:35 and 23:40.</p>
+<p><em>random-string</em><br>
+A system-generated random string.</p>
+<p>The following is an example log file name:</p>
+<pre><code>s3://my-bucket/prefix/AWSLogs/123456789012/elasticloadbalancing/us-east-2/2020/05/01/123456789012_elasticloadbalancing_us-east-2_net.my-loadbalancer.1234567890abcdef_20200501T0000Z_20sg8hgm.log.gz
+</code></pre>
+<p>You can store your log files in your bucket for as long as you want, but you can also define Amazon S3 lifecycle rules to archive or delete log files automatically. For more information, see <a href="https://docs.aws.amazon.com/AmazonS3/latest/userguide/object-lifecycle-mgmt.html">Manage your storage lifecycle</a> in the <em>Amazon S3 User Guide</em>.</p>
+<h2 id="access-log-entries">Access log entries<a name="access-log-entry-format"></a></h2>
+<p>The following table describes the fields of an access log entry, in order. All fields are delimited by spaces. When new fields are introduced, they are added to the end of the log entry. When processing the log files, you should ignore any fields at the end of the log entry that you were not expecting.</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>type</td>
+<td>The type of listener. The supported value is <code>tls</code>.</td>
+</tr>
+<tr>
+<td>version</td>
+<td>The version of the log entry. The current version is 2.0.</td>
+</tr>
+<tr>
+<td>time</td>
+<td>The time recorded at the end of the TLS connection, in ISO 8601 format.</td>
+</tr>
+<tr>
+<td>elb</td>
+<td>The resource ID of the load balancer.</td>
+</tr>
+<tr>
+<td>listener</td>
+<td>The resource ID of the TLS listener for the connection.</td>
+</tr>
+<tr>
+<td>client:port</td>
+<td>The IP address and port of the client.</td>
+</tr>
+<tr>
+<td>destination:port</td>
+<td>The IP address and port of the destination. If the client connects directly to the load balancer, the destination is the listener. If the client connects using a VPC endpoint service, the destination is the VPC endpoint.</td>
+</tr>
+<tr>
+<td>connection_time</td>
+<td>The total time for the connection to complete, from start to closure, in milliseconds.</td>
+</tr>
+<tr>
+<td>tls_handshake_time</td>
+<td>The total time for the TLS handshake to complete after the TCP connection is established, including client-side delays, in milliseconds. This time is included in the connection_time field.</td>
+</tr>
+<tr>
+<td>received_bytes</td>
+<td>The count of bytes received by the load balancer from the client, after decryption.</td>
+</tr>
+<tr>
+<td>sent_bytes</td>
+<td>The count of bytes sent by the load balancer to the client, before encryption.</td>
+</tr>
+<tr>
+<td>incoming_tls_alert</td>
+<td>The integer value of TLS alerts received by the load balancer from the client, if present. Otherwise, this value is set to -.</td>
+</tr>
+<tr>
+<td>chosen_cert_arn</td>
+<td>The ARN of the certificate served to the client. If no valid client hello message is sent, this value is set to -.</td>
+</tr>
+<tr>
+<td>chosen_cert_serial</td>
+<td>Reserved for future use. This value is always set to -.</td>
+</tr>
+<tr>
+<td>tls_cipher</td>
+<td>The cipher suite negotiated with the client, in OpenSSL format. If TLS negotiation does not complete, this value is set to -.</td>
+</tr>
+<tr>
+<td>tls_protocol_version</td>
+<td>The TLS protocol negotiated with the client, in string format. The possible values are <code>tlsv10</code>, <code>tlsv11</code>, and <code>tlsv12</code>. If TLS negotiation does not complete, this value is set to -.</td>
+</tr>
+<tr>
+<td>tls_named_group</td>
+<td>Reserved for future use. This value is always set to -.</td>
+</tr>
+<tr>
+<td>domain_name</td>
+<td>The value of the server_name extension in the client hello message. This value is URL-encoded. If no valid client hello message is sent or the extension is not present, this value is set to -.</td>
+</tr>
+<tr>
+<td>alpn_fe_protocol</td>
+<td>The application protocol negotiated with the client, in string format. The possible values are <code>h2</code>, <code>http/1.1</code>, and <code>http/1.0</code>. If no ALPN policy is configured in the TLS listener, no matching protocol is found, or no valid protocol list is sent, this value is set to -.</td>
+</tr>
+<tr>
+<td>alpn_be_protocol</td>
+<td>The application protocol negotiated with the target, in string format. The possible values are <code>h2</code>, <code>http/1.1</code>, and <code>http/1.0</code>. If no ALPN policy is configured in the TLS listener, no matching protocol is found, or no valid protocol list is sent, this value is set to -.</td>
+</tr>
+<tr>
+<td>alpn_client_preference_list</td>
+<td>The value of the application_layer_protocol_negotiation extension in the client hello message. This value is URL-encoded. Each protocol is enclosed in double quotes and protocols are separated by a comma. If no ALPN policy is configured in the TLS listener, no valid client hello message is sent, or the extension is not present, this value is set to -. The string is truncated if it is longer than 256 bytes.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="example-log-entries">Example log entries<a name="access-log-entry-examples"></a></h3>
+<p>The following are example log entries. Note that the text appears on multiple lines only to make it easier to read.</p>
+<p>The following is an example for a TLS listener without an ALPN policy.</p>
+<pre><code>tls 2.0 2018-12-20T02:59:40 net/my-network-loadbalancer/c6e77e28c25b2234 g3d4b5e8bb8464cd 
+72.21.218.154:51341 172.100.100.185:443 5 2 98 246 - 
+arn:aws:acm:us-east-2:671290407336:certificate/2a108f19-aded-46b0-8493-c63eb1ef4a99 - 
+ECDHE-RSA-AES128-SHA tlsv12 - 
+my-network-loadbalancer-c6e77e28c25b2234.elb.us-east-2.amazonaws.com
+- - -
+</code></pre>
+<p>The following is an example for a TLS listener with an ALPN policy.</p>
+<pre><code>tls 2.0 2020-04-01T08:51:42 net/my-network-loadbalancer/c6e77e28c25b2234 g3d4b5e8bb8464cd 
+72.21.218.154:51341 172.100.100.185:443 5 2 98 246 - 
+arn:aws:acm:us-east-2:671290407336:certificate/2a108f19-aded-46b0-8493-c63eb1ef4a99 - 
+ECDHE-RSA-AES128-SHA tlsv12 - 
+my-network-loadbalancer-c6e77e28c25b2234.elb.us-east-2.amazonaws.com
+h2 h2 &quot;h2&quot;,&quot;http/1.1&quot;
+</code></pre>
+<h2 id="bucket-requirements">Bucket requirements<a name="access-logging-bucket-requirements"></a></h2>
+<p>When you enable access logging, you must specify an S3 bucket for the access logs. The bucket can be owned by a different account than the account that owns the load balancer. The bucket must meet the following requirements.</p>
+<p><strong>Requirements</strong></p>
+<ul>
+<li>
+<p>The bucket must be located in the same region as the load balancer.</p>
+</li>
+<li>
+<p>The prefix that you specify must not include AWSLogs. We add the portion of the file name starting with AWSLogs after the bucket name and prefix that you specify.</p>
+</li>
+<li>
+<p>The bucket must have a bucket policy that grants permission to write the access logs to your bucket. Bucket policies are a collection of JSON statements written in the access policy language to define access permissions for your bucket. The following is an example policy.</p>
+<pre><code>{
+  &quot;Version&quot;: &quot;2012-10-17&quot;,
+  &quot;Statement&quot;: [
+    {
+      &quot;Sid&quot;: &quot;AWSLogDeliveryWrite&quot;,
+      &quot;Effect&quot;: &quot;Allow&quot;,
+      &quot;Principal&quot;: {
+        &quot;Service&quot;: &quot;delivery.logs.amazonaws.com&quot;
+      },
+      &quot;Action&quot;: &quot;s3:PutObject&quot;,
+      &quot;Resource&quot;: &quot;arn:aws:s3:::bucket_name/prefix/AWSLogs/aws-account-id/*&quot;,
+      &quot;Condition&quot;: {
+        &quot;StringEquals&quot;: {
+          &quot;s3:x-amz-acl&quot;: &quot;bucket-owner-full-control&quot;
+        }
+      }
+    },
+    {
+      &quot;Sid&quot;: &quot;AWSLogDeliveryAclCheck&quot;,
+      &quot;Effect&quot;: &quot;Allow&quot;,
+      &quot;Principal&quot;: {
+        &quot;Service&quot;: &quot;delivery.logs.amazonaws.com&quot;
+      },
+      &quot;Action&quot;: &quot;s3:GetBucketAcl&quot;,
+      &quot;Resource&quot;: &quot;arn:aws:s3:::bucket_name&quot;
+    }
+  ]
+}
+```&lt;a name=&quot;access-log-bucket-encryption&quot;&gt;&lt;/a&gt;
+
+</code></pre>
+</li>
+</ul>
+<p><strong>Encryption</strong></p>
+<p>You can enable server-side encryption for your Amazon S3 access log bucket in one of the following ways:</p>
+<ul>
+<li>Amazon S3-Managed Keys (SSE-S3)</li>
+<li>AWS KMS keys stored in AWS Key Management Service (SSE-KMS) †</li>
+</ul>
+<p>† With Network Load Balancer access logs, you can't use AWS managed keys, you must use customer managed keys.</p>
+<p>For more information, see <a href="https://docs.aws.amazon.com/AmazonS3/latest/userguide/specifying-s3-encryption.html">Specifying Amazon S3 encryption (SSE-S3)</a> and <a href="https://docs.aws.amazon.com/AmazonS3/latest/userguide/specifying-kms-encryption.html">Specifying server-side encryption with AWS KMS (SSE-KMS)</a> in the <em>Amazon S3 User Guide</em>.</p>
+<p>The key policy must allow the service to encrypt and decrypt the logs. The following is an example policy.</p>
+<pre><code>{
+  &quot;Version&quot;: &quot;2012-10-17&quot;,
+  &quot;Statement&quot;: [
+    {
+      &quot;Effect&quot;: &quot;Allow&quot;,
+      &quot;Principal&quot;: {
+        &quot;Service&quot;: &quot;delivery.logs.amazonaws.com&quot;
+      },
+      &quot;Action&quot;: [
+        &quot;kms:Encrypt&quot;,
+        &quot;kms:Decrypt&quot;,
+        &quot;kms:ReEncrypt*&quot;,
+        &quot;kms:GenerateDataKey*&quot;,
+        &quot;kms:DescribeKey&quot;
+      ],
+      &quot;Resource&quot;: &quot;*&quot;
+    }
+  ]
+}
+</code></pre>
+<h2 id="enable-access-logging">Enable access logging<a name="enable-disable-access-logging"></a></h2>
+<p>When you enable access logging for your load balancer, you must specify the name of the S3 bucket where the load balancer will store the logs. For more information, see <a href="#access-logging-bucket-requirements">Bucket requirements</a>.</p>
+<p><strong>To enable access logging using the console</strong></p>
+<ol>
+<li>
+<p>Open the Amazon EC2 console at <a href="https://console.aws.amazon.com/ec2/">https://console.aws.amazon.com/ec2/</a>.</p>
+</li>
+<li>
+<p>In the navigation pane, choose <strong>Load Balancers</strong>.</p>
+</li>
+<li>
+<p>Select the name of your load balancer to open its details page.</p>
+</li>
+<li>
+<p>On the <strong>Attributes</strong> tab, choose <strong>Edit</strong>.</p>
+</li>
+<li>
+<p>On the <strong>Edit load balancer attributes</strong> page, do the following:</p>
+<ol>
+<li>
+<p>Turn <strong>Access logs</strong> on.</p>
+</li>
+<li>
+<p>For <strong>S3 URI</strong>, type the name of your S3 bucket, including any prefix (for example, <code>my-loadbalancer-logs/my-app</code>). You can specify the name of an existing bucket or a name for a new bucket. If you specify an existing bucket, be sure that you own this bucket and that you configured the required bucket policy.</p>
+</li>
+<li>
+<p>Choose <strong>Save changes</strong>.</p>
+</li>
+</ol>
+</li>
+</ol>
+<p><strong>To enable access logging using the AWS CLI</strong><br>
+Use the <a href="https://docs.aws.amazon.com/cli/latest/reference/elbv2/modify-load-balancer-attributes.html">modify-load-balancer-attributes</a> command.</p>
+<h2 id="disable-access-logging">Disable access logging<a name="disable-access-logging"></a></h2>
+<p>You can disable access logging for your load balancer at any time. After you disable access logging, your access logs remain in your S3 bucket until you delete the them. For more information, see <a href="https://docs.aws.amazon.com/AmazonS3/latest/user-guide/BucketOperations.html">Working with buckets</a> in the <em>Amazon Simple Storage Service User Guide</em>.</p>
+<p><strong>To disable access logging using the console</strong></p>
+<ol>
+<li>
+<p>Open the Amazon EC2 console at <a href="https://console.aws.amazon.com/ec2/">https://console.aws.amazon.com/ec2/</a>.</p>
+</li>
+<li>
+<p>In the navigation pane, choose <strong>Load Balancers</strong>.</p>
+</li>
+<li>
+<p>Select the name of your load balancer to open its details page.</p>
+</li>
+<li>
+<p>On the <strong>Attributes</strong> tab, choose <strong>Edit</strong>.</p>
+</li>
+<li>
+<p>Turn <strong>Access logs</strong> off.</p>
+</li>
+<li>
+<p>Choose <strong>Save changes</strong>.</p>
+</li>
+</ol>
+<p><strong>To disable access logging using the AWS CLI</strong><br>
+Use the <a href="https://docs.aws.amazon.com/cli/latest/reference/elbv2/modify-load-balancer-attributes.html">modify-load-balancer-attributes</a> command.</p>
+<h2 id="processing-access-log-files">Processing access log files<a name="log-processing-tools"></a></h2>
+<p>The access log files are compressed. If you open the files using the Amazon S3 console, they are uncompressed and the information is displayed. If you download the files, you must uncompress them to view the information.</p>
+<p>If there is a lot of demand on your website, your load balancer can generate log files with gigabytes of data. You might not be able to process such a large amount of data using line-by-line processing. Therefore, you might have to use analytical tools that provide parallel processing solutions. For example, you can use the following analytical tools to analyze and process access logs:</p>
+<ul>
+<li>Amazon Athena is an interactive query service that makes it easy to analyze data in Amazon S3 using standard SQL. For more information, see <a href="https://docs.aws.amazon.com/athena/latest/ug/networkloadbalancer-classic-logs.html">Querying Network Load Balancer logs</a> in the <em>Amazon Athena User Guide</em>.</li>
+<li><a href="https://www.loggly.com/docs/s3-ingestion-auto/">Loggly</a></li>
+<li><a href="https://splunkbase.splunk.com/app/1274/">Splunk</a></li>
+<li><a href="https://www.sumologic.com/application/elb/">Sumo Logic</a></li>
+</ul>
+
+        
+        
+    </body>
+    </html>

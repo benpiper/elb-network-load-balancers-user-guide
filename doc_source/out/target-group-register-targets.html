@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <title>Register targets with your target group&lt;a name&equals;&quot;target-group-register-targets&quot;&gt;&lt;&sol;a&gt;</title>
+        <style>
+/* From extension vscode.github */
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+
+.vscode-dark img[src$=\#gh-light-mode-only],
+.vscode-light img[src$=\#gh-dark-mode-only] {
+	display: none;
+}
+
+</style>
+        
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/markdown.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/highlight.css">
+<style>
+            body {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe WPC', 'Segoe UI', system-ui, 'Ubuntu', 'Droid Sans', sans-serif;
+                font-size: 14px;
+                line-height: 1.6;
+            }
+        </style>
+        <style>
+.task-list-item {
+    list-style-type: none;
+}
+
+.task-list-item-checkbox {
+    margin-left: -20px;
+    vertical-align: middle;
+    pointer-events: none;
+}
+</style>
+        
+    </head>
+    <body class="vscode-body vscode-light">
+        <h1 id="register-targets-with-your-target-group">Register targets with your target group<a name="target-group-register-targets"></a></h1>
+<p>When your target is ready to handle requests, you register it with one or more target groups. The target type of the target group determines how you register targets. For example, you can register instance IDs, IP addresses, or an Application Load Balancer. Your Network Load Balancer starts routing requests to targets as soon as the registration process completes and the targets pass the initial health checks. It can take a few minutes for the registration process to complete and health checks to start. For more information, see <a href="target-group-health-checks.html">Health checks for your target groups</a>.</p>
+<p>If demand on your currently registered targets increases, you can register additional targets in order to handle the demand. If demand on your registered targets decreases, you can deregister targets from your target group. It can take a few minutes for the deregistration process to complete and for the load balancer to stop routing requests to the target. If demand increases subsequently, you can register targets that you deregistered with the target group again. If you need to service a target, you can deregister it and then register it again when servicing is complete.</p>
+<p>When you deregister a target, Elastic Load Balancing waits until in-flight requests have completed. This is known as <em>connection draining</em>. The status of a target is <code>draining</code> while connection draining is in progress. After deregistration is complete, status of the target changes to <code>unused</code>. For more information, see <a href="load-balancer-target-groups.md#deregistration-delay">Deregistration delay</a>.</p>
+<p>If you are registering targets by instance ID, you can use your load balancer with an Auto Scaling group. After you attach a target group to an Auto Scaling group and the group scales out, the instances launched by the Auto Scaling group are automatically registered with the target group. If you detach the load balancer from the Auto Scaling group, the instances are automatically deregistered from the target group. For more information, see <a href="https://docs.aws.amazon.com/autoscaling/ec2/userguide/attach-load-balancer-asg.html">Attaching a load balancer to your Auto Scaling group</a> in the <em>Amazon EC2 Auto Scaling User Guide</em>.</p>
+<h2 id="target-security-groups">Target security groups<a name="target-security-groups"></a></h2>
+<p>When you register EC2 instances as targets, you must ensure that the security groups for these instances allow traffic on both the listener port and the health check port.</p>
+<p><strong>Considerations</strong></p>
+<ul>
+<li>Network Load Balancers do not have associated security groups. Therefore, the security groups for your targets must use IP addresses to allow traffic.</li>
+<li>You can't use the security groups for the clients as a source in the security groups for the targets. Therefore, the security groups for your targets must use the IP addresses of the clients to allow traffic.</li>
+</ul>
+<p><strong>Recommended rules with client IP preservation enabled</strong><br>
+The following are the recommended rules for the security groups for your targets with client IP preservation enabled.</p>
+<p>|
+|</p>
+<table>
+<thead>
+<tr>
+<th>Inbound rules</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Source</td>
+</tr>
+<tr>
+<td>Client CIDR</td>
+</tr>
+<tr>
+<td>VPC CIDR</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Recommended rules with client IP preservation disabled</strong><br>
+The following are the recommended rules for the security groups for your targets with client IP preservation disabled.</p>
+<p>|
+|</p>
+<table>
+<thead>
+<tr>
+<th>Inbound rules</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Source</td>
+</tr>
+<tr>
+<td>VPC CIDR</td>
+</tr>
+<tr>
+<td>VPC CIDR</td>
+</tr>
+</tbody>
+</table>
+<p>† If you register targets by IP address but do not want to grant access to the entire VPC CIDR, you can grant access to the private IP addresses used by the load balancer nodes. There is one IP address per load balancer subnet. To find these addresses, use the following procedure.</p>
+<p><strong>To find the private IP addresses to allow</strong></p>
+<ol>
+<li>
+<p>Open the Amazon EC2 console at <a href="https://console.aws.amazon.com/ec2/">https://console.aws.amazon.com/ec2/</a>.</p>
+</li>
+<li>
+<p>In the navigation pane, choose <strong>Network Interfaces</strong>.</p>
+</li>
+<li>
+<p>In the search field, enter the name of your Network Load Balancer. There is one network interface per load balancer subnet.</p>
+</li>
+<li>
+<p>On the <strong>Details</strong> tab for each network interface, copy the address from <strong>Primary private IPv4 IP</strong>.</p>
+</li>
+</ol>
+<h2 id="network-acls">Network ACLs<a name="network-acls"></a></h2>
+<p>When you register EC2 instances as targets, you must ensure that the network ACLs for the subnets for your instances allow traffic on both the listener port and the health check port. The default network access control list (ACL) for a VPC allows all inbound and outbound traffic. If you create custom network ACLs, verify that they allow the appropriate traffic.</p>
+<p>The network ACLs associated with the subnets for your instances must allow the following traffic for an internet-facing load balancer.</p>
+<p><strong>Recommended rules for instance subnets</strong></p>
+<p>|
+|</p>
+<table>
+<thead>
+<tr>
+<th>Inbound</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Source</td>
+</tr>
+<tr>
+<td>Client IP addresses</td>
+</tr>
+<tr>
+<td>VPC CIDR</td>
+</tr>
+<tr>
+<td>VPC CIDR</td>
+</tr>
+<tr>
+<td>Outbound</td>
+</tr>
+<tr>
+<td>---</td>
+</tr>
+<tr>
+<td>Destination</td>
+</tr>
+<tr>
+<td>Client IP addresses</td>
+</tr>
+<tr>
+<td>VPC CIDR</td>
+</tr>
+<tr>
+<td>VPC CIDR</td>
+</tr>
+</tbody>
+</table>
+<p>The network ACLs associated with the subnets for your load balancer must allow the following traffic for an internet-facing load balancer.</p>
+<p><strong>Recommended rules for load balancer subnets</strong></p>
+<p>|
+|</p>
+<table>
+<thead>
+<tr>
+<th>Inbound</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Source</td>
+</tr>
+<tr>
+<td>Client IP addresses</td>
+</tr>
+<tr>
+<td>VPC CIDR</td>
+</tr>
+<tr>
+<td>VPC CIDR</td>
+</tr>
+<tr>
+<td>Outbound</td>
+</tr>
+<tr>
+<td>---</td>
+</tr>
+<tr>
+<td>Destination</td>
+</tr>
+<tr>
+<td>Client IP addresses</td>
+</tr>
+<tr>
+<td>VPC CIDR</td>
+</tr>
+<tr>
+<td>VPC CIDR</td>
+</tr>
+<tr>
+<td>VPC CIDR</td>
+</tr>
+</tbody>
+</table>
+<p>For an internal load balancer, the network ACLs for the subnets for your instances and load balancer nodes must allow both inbound and outbound traffic to and from the VPC CIDR, on the listener port and ephemeral ports.</p>
+<h2 id="register-or-deregister-targets">Register or deregister targets<a name="register-deregister-targets"></a></h2>
+<p>Each target group must have at least one registered target in each Availability Zone that is enabled for the load balancer.</p>
+<p>The target type of your target group determines how you register targets with that target group. For more information, see <a href="load-balancer-target-groups.md#target-type">Target type</a>.</p>
+<p><strong>Requirements and considerations</strong></p>
+<ul>
+<li>You can't register instances by instance ID if they use one of the following instance types: C1, CC1, CC2, CG1, CG2, CR1, G1, G2, HI1, HS1, M1, M2, M3, or T1.</li>
+<li>You can't register instances by instance ID if they are in a VPC that is peered to the load balancer VPC (same Region or different Region). You can register these instances by IP address.</li>
+<li>If you register a target by IP address and the IP address is in the same VPC as the load balancer, the load balancer verifies that it is from a subnet that it can reach.</li>
+<li>For UDP and TCP_UDP target groups, do not register instances by IP address if they reside outside of the load balancer VPC or if they use one of the following instance types: C1, CC1, CC2, CG1, CG2, CR1, G1, G2, HI1, HS1, M1, M2, M3, or T1. Targets that reside outside the load balancer VPC or use an unsupported instance type might be able to receive traffic from the load balancer but then be unable to respond.</li>
+</ul>
+<p><strong>Topics</strong></p>
+<ul>
+<li><a href="#register-instances">Register or deregister targets by instance ID</a></li>
+<li><a href="#register-ip-addresses">Register or deregister targets by IP address</a></li>
+<li><a href="#register-cli">Register or deregister targets using the AWS CLI</a></li>
+</ul>
+<h3 id="register-or-deregister-targets-by-instance-id">Register or deregister targets by instance ID<a name="register-instances"></a></h3>
+<p>An instance must be in the <code>running</code> state when you register it.</p>
+<hr>
+<h4 id="-new-console-">[ New console ]</h4>
+<p><strong>To register or deregister targets by instance ID using the new console</strong></p>
+<ol>
+<li>
+<p>Open the Amazon EC2 console at <a href="https://console.aws.amazon.com/ec2/">https://console.aws.amazon.com/ec2/</a>.</p>
+</li>
+<li>
+<p>On the navigation pane, under <strong>Load Balancing</strong>, choose <strong>Target Groups</strong>.</p>
+</li>
+<li>
+<p>Choose the name of the target group to open its details page.</p>
+</li>
+<li>
+<p>Choose the <strong>Targets</strong> tab.</p>
+</li>
+<li>
+<p>To register instances, choose <strong>Register targets</strong>. Select one or more instances, enter the default instance port as needed, and then choose <strong>Include as pending below</strong>. When you are finished adding instances, choose <strong>Register pending targets</strong>.</p>
+</li>
+<li>
+<p>To deregister instances, select the instance and then choose <strong>Deregister</strong>.</p>
+</li>
+</ol>
+<hr>
+<h4 id="-old-console-">[ Old console ]</h4>
+<p><strong>To register or deregister targets by instance ID using the old console</strong></p>
+<ol>
+<li>
+<p>Open the Amazon EC2 console at <a href="https://console.aws.amazon.com/ec2/">https://console.aws.amazon.com/ec2/</a>.</p>
+</li>
+<li>
+<p>In the navigation pane, under <strong>LOAD BALANCING</strong>, choose <strong>Target Groups</strong>.</p>
+</li>
+<li>
+<p>Select the target group.</p>
+</li>
+<li>
+<p>Choose <strong>Targets</strong>, <strong>Edit</strong>.</p>
+</li>
+<li>
+<p>(Optional) For <strong>Registered instances</strong>, select any instances to be deregistered and choose <strong>Remove</strong>.</p>
+</li>
+<li>
+<p>(Optional) For <strong>Instances</strong>, select any running instances to be registered, modify the default instance port as needed, and then choose <strong>Add to registered</strong>.</p>
+</li>
+<li>
+<p>Choose <strong>Save</strong>.</p>
+</li>
+</ol>
+<hr>
+<h3 id="register-or-deregister-targets-by-ip-address">Register or deregister targets by IP address<a name="register-ip-addresses"></a></h3>
+<p><strong>IPv4 targets</strong></p>
+<p>An IP address that you register must be from one of the following CIDR blocks:</p>
+<ul>
+<li>The subnets of the VPC for the target group</li>
+<li>10.0.0.0/8 (RFC 1918)</li>
+<li>100.64.0.0/10 (RFC 6598)</li>
+<li>172.16.0.0/12 (RFC 1918)</li>
+<li>192.168.0.0/16 (RFC 1918)</li>
+</ul>
+<p>The IP address type can't be changed after the target group is created.</p>
+<p>When launching a Network Load Balancer in a shared Amazon VPC as a participant, you can only register targets in subnets that have been shared with you.</p>
+<p><strong>IPv6 targets</strong></p>
+<ul>
+<li>The IP addresses that you register must be within the VPC CIDR block or within a peered VPC CIDR block.</li>
+<li>The IP address type can't be changed after the target group is created.</li>
+<li>You can associate IPv6 target groups only to a dualstack load balancer with TCP or a TLS listeners.</li>
+</ul>
+<hr>
+<h4 id="-new-console--1">[ New console ]</h4>
+<p><strong>To register or deregister targets by IP address using the new console</strong></p>
+<ol>
+<li>
+<p>Open the Amazon EC2 console at <a href="https://console.aws.amazon.com/ec2/">https://console.aws.amazon.com/ec2/</a>.</p>
+</li>
+<li>
+<p>On the navigation pane, under <strong>Load Balancing</strong>, choose <strong>Target Groups</strong>.</p>
+</li>
+<li>
+<p>Choose the name of the target group to open its details page.</p>
+</li>
+<li>
+<p>Choose the <strong>Targets</strong> tab.</p>
+</li>
+<li>
+<p>To register IP addresses, choose <strong>Register targets</strong>. For each IP address, select the network, Availability Zone, IP address (IPv4 or IPv6), and port, and then choose <strong>Include as pending below</strong>. When you are finished specifying addresses, choose <strong>Register pending targets</strong>.</p>
+</li>
+<li>
+<p>To deregister IP addresses, select the IP addresses and then choose <strong>Deregister</strong>. If you have many registered IP addresses, you might find it helpful to add a filter or change the sort order.</p>
+</li>
+</ol>
+<hr>
+<h4 id="-old-console--1">[ Old console ]</h4>
+<p><strong>To register or deregister targets by IP address using the old console</strong></p>
+<ol>
+<li>
+<p>Open the Amazon EC2 console at <a href="https://console.aws.amazon.com/ec2/">https://console.aws.amazon.com/ec2/</a>.</p>
+</li>
+<li>
+<p>In the navigation pane, under <strong>LOAD BALANCING</strong>, choose <strong>Target Groups</strong>.</p>
+</li>
+<li>
+<p>Select the target group and choose <strong>Targets</strong>, <strong>Edit</strong>.</p>
+</li>
+<li>
+<p>To register IP addresses, choose the <strong>Register targets</strong> icon (the plus sign) in the menu bar. For each IP address, specify the network, Availability Zone, IP address, and port, and then choose <strong>Add to list</strong>. When you are finished specifying addresses, choose <strong>Register</strong>.</p>
+</li>
+<li>
+<p>To deregister IP addresses, choose the <strong>Deregister targets</strong> icon (the minus sign) in the menu bar. If you have many registered IP addresses, you might find it helpful to add a filter or change the sort order. Select the IP addresses and choose <strong>Deregister</strong>.</p>
+</li>
+<li>
+<p>To leave this screen, choose the <strong>Back to target group</strong> icon (the back button) in the menu bar.</p>
+</li>
+</ol>
+<hr>
+<h3 id="register-or-deregister-targets-using-the-aws-cli">Register or deregister targets using the AWS CLI<a name="register-cli"></a></h3>
+<p>Use the <a href="https://docs.aws.amazon.com/cli/latest/reference/elbv2/register-targets.html">register-targets</a> command to add targets and the <a href="https://docs.aws.amazon.com/cli/latest/reference/elbv2/deregister-targets.html">deregister-targets</a> command to remove targets.</p>
+
+        
+        
+    </body>
+    </html>

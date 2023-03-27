@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <title>Monitor your Network Load Balancers&lt;a name&equals;&quot;load-balancer-monitoring&quot;&gt;&lt;&sol;a&gt;</title>
+        <style>
+/* From extension vscode.github */
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+
+.vscode-dark img[src$=\#gh-light-mode-only],
+.vscode-light img[src$=\#gh-dark-mode-only] {
+	display: none;
+}
+
+</style>
+        
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/markdown.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/highlight.css">
+<style>
+            body {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe WPC', 'Segoe UI', system-ui, 'Ubuntu', 'Droid Sans', sans-serif;
+                font-size: 14px;
+                line-height: 1.6;
+            }
+        </style>
+        <style>
+.task-list-item {
+    list-style-type: none;
+}
+
+.task-list-item-checkbox {
+    margin-left: -20px;
+    vertical-align: middle;
+    pointer-events: none;
+}
+</style>
+        
+    </head>
+    <body class="vscode-body vscode-light">
+        <h1 id="monitor-your-network-load-balancers">Monitor your Network Load Balancers<a name="load-balancer-monitoring"></a></h1>
+<p>You can use the following features to monitor your load balancers, analyze traffic patterns, and troubleshoot issues with your load balancers and targets.</p>
+<p><strong>CloudWatch metrics</strong><br>
+You can use Amazon CloudWatch to retrieve statistics about data points for your load balancers and targets as an ordered set of time-series data, known as <em>metrics</em>. You can use these metrics to verify that your system is performing as expected. For more information, see <a href="load-balancer-cloudwatch-metrics.html">CloudWatch metrics for your Network Load Balancer</a>.</p>
+<p><strong>VPC Flow Logs</strong><br>
+You can use VPC Flow Logs to capture detailed information about the traffic going to and from your Network Load Balancer. For more information, see <a href="https://docs.aws.amazon.com/vpc/latest/userguide/flow-logs.html">VPC flow logs</a> in the <em>Amazon VPC User Guide</em>.<br>
+Create a flow log for each network interface for your load balancer. There is one network interface per load balancer subnet. To identify the network interfaces for a Network Load Balancer, look for the name of the load balancer in the description field of the network interface.<br>
+There are two entries for each connection through your Network Load Balancer, one for the frontend connection between the client and the load balancer and the other for the backend connection between the load balancer and the target. If the target group's client IP preservation attribute is enabled, the connection appears to the instance as a connection from the client. Otherwise, the connection's source IP is the load balancer's private IP address. If the security group of the instance doesn't allow connections from the client but the network ACLs for the load balancer subnet allow them, the logs for the network interface for the load balancer show &quot;ACCEPT OK&quot; for the frontend and backend connections, while the logs for the network interface for the instance show &quot;REJECT OK&quot; for the connection.</p>
+<p><strong>Access logs</strong><br>
+You can use access logs to capture detailed information about TLS requests made to your load balancer. The log files are stored in Amazon S3. You can use these access logs to analyze traffic patterns and to troubleshoot issues with your targets. For more information, see <a href="load-balancer-access-logs.html">Access logs for your Network Load Balancer</a>.</p>
+<p><strong>CloudTrail logs</strong><br>
+You can use AWS CloudTrail to capture detailed information about the calls made to the Elastic Load Balancing API and store them as log files in Amazon S3. You can use these CloudTrail logs to determine which calls were made, the source IP address where the call came from, who made the call, when the call was made, and so on. For more information, see <a href="load-balancer-cloudtrail-logs.html">Logging API calls for your Network Load Balancer using AWS CloudTrail</a>.</p>
+
+        
+        
+    </body>
+    </html>

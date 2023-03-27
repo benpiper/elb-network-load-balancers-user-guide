@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <title>Tags for your Network Load Balancer&lt;a name&equals;&quot;load-balancer-tags&quot;&gt;&lt;&sol;a&gt;</title>
+        <style>
+/* From extension vscode.github */
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+
+.vscode-dark img[src$=\#gh-light-mode-only],
+.vscode-light img[src$=\#gh-dark-mode-only] {
+	display: none;
+}
+
+</style>
+        
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/markdown.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/highlight.css">
+<style>
+            body {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe WPC', 'Segoe UI', system-ui, 'Ubuntu', 'Droid Sans', sans-serif;
+                font-size: 14px;
+                line-height: 1.6;
+            }
+        </style>
+        <style>
+.task-list-item {
+    list-style-type: none;
+}
+
+.task-list-item-checkbox {
+    margin-left: -20px;
+    vertical-align: middle;
+    pointer-events: none;
+}
+</style>
+        
+    </head>
+    <body class="vscode-body vscode-light">
+        <h1 id="tags-for-your-network-load-balancer">Tags for your Network Load Balancer<a name="load-balancer-tags"></a></h1>
+<p>Tags help you to categorize your load balancers in different ways, for example, by purpose, owner, or environment.</p>
+<p>You can add multiple tags to each load balancer. If you add a tag with a key that is already associated with the load balancer, it updates the value of that tag.</p>
+<p>When you are finished with a tag, you can remove it from your load balancer.</p>
+<p><strong>Restrictions</strong></p>
+<ul>
+<li>Maximum number of tags per resource—50</li>
+<li>Maximum key length—127 Unicode characters</li>
+<li>Maximum value length—255 Unicode characters</li>
+<li>Tag keys and values are case-sensitive. Allowed characters are letters, spaces, and numbers representable in UTF-8, plus the following special characters: + - = . _ : / @. Do not use leading or trailing spaces.</li>
+<li>Do not use the <code>aws:</code> prefix in your tag names or values because it is reserved for AWS use. You can't edit or delete tag names or values with this prefix. Tags with this prefix do not count against your tags per resource limit.</li>
+</ul>
+<p><strong>To update the tags for a load balancer using the console</strong></p>
+<ol>
+<li>
+<p>Open the Amazon EC2 console at <a href="https://console.aws.amazon.com/ec2/">https://console.aws.amazon.com/ec2/</a>.</p>
+</li>
+<li>
+<p>In the navigation pane, under <strong>LOAD BALANCING</strong>, choose <strong>Load Balancers</strong>.</p>
+</li>
+<li>
+<p>Select the load balancer.</p>
+</li>
+<li>
+<p>Choose <strong>Tags</strong>, <strong>Add/Edit Tags</strong>, and then do one or more of the following:</p>
+<ol>
+<li>
+<p>To update a tag, edit the values of <strong>Key</strong> and <strong>Value</strong>.</p>
+</li>
+<li>
+<p>To add a new tag, choose <strong>Create Tag</strong>. For <strong>Key</strong> and <strong>Value</strong>, enter values. Allowed characters are letters, spaces, numbers (in UTF-8), and the following special characters: + - = . _ : / @. Do not use leading or trailing spaces. Tag values are case-sensitive.</p>
+</li>
+<li>
+<p>To delete a tag, choose the delete icon (X) next to the tag.</p>
+</li>
+</ol>
+</li>
+<li>
+<p>When you have finished updating tags, choose <strong>Save</strong>.</p>
+</li>
+</ol>
+<p><strong>To update the tags for a load balancer using the AWS CLI</strong><br>
+Use the <a href="https://docs.aws.amazon.com/cli/latest/reference/elbv2/add-tags.html">add-tags</a> and <a href="https://docs.aws.amazon.com/cli/latest/reference/elbv2/remove-tags.html">remove-tags</a> commands.</p>
+
+        
+        
+    </body>
+    </html>

@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <title>IP address types for your Network Load Balancer&lt;a name&equals;&quot;load-balancer-ip-address-type&quot;&gt;&lt;&sol;a&gt;</title>
+        <style>
+/* From extension vscode.github */
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+
+.vscode-dark img[src$=\#gh-light-mode-only],
+.vscode-light img[src$=\#gh-dark-mode-only] {
+	display: none;
+}
+
+</style>
+        
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/markdown.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/highlight.css">
+<style>
+            body {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe WPC', 'Segoe UI', system-ui, 'Ubuntu', 'Droid Sans', sans-serif;
+                font-size: 14px;
+                line-height: 1.6;
+            }
+        </style>
+        <style>
+.task-list-item {
+    list-style-type: none;
+}
+
+.task-list-item-checkbox {
+    margin-left: -20px;
+    vertical-align: middle;
+    pointer-events: none;
+}
+</style>
+        
+    </head>
+    <body class="vscode-body vscode-light">
+        <h1 id="ip-address-types-for-your-network-load-balancer">IP address types for your Network Load Balancer<a name="load-balancer-ip-address-type"></a></h1>
+<p>You can configure your Network Load Balancer so that clients can communicate with the load balancer using IPv4 addresses only, or using both IPv4 and IPv6 addresses (dualstack). The load balancer communicates with targets based on the IP address type of the target group. For more information, see <a href="network-load-balancers.md#ip-address-type">IP address type</a>.</p>
+<p><strong>Dualstack requirements</strong></p>
+<ul>
+<li>You can set the IP address type when you create the load balancer and update it at any time.</li>
+<li>The virtual private cloud (VPC) and subnets that you specify for the load balancer must have associated IPv6 CIDR blocks. For more information, see <a href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-instance-addressing.html#ipv6-addressing">IPv6 addresses</a> in the <em>Amazon EC2 User Guide</em>.</li>
+<li>The load balancer must have only TCP and TLS listeners.</li>
+<li>The route tables for the load balancer subnets must route IPv6 traffic.</li>
+<li>The network ACLs for the load balancer subnets must allow IPv6 traffic.</li>
+</ul>
+<p><strong>To set the IP address type at creation</strong><br>
+Configure settings as described in <a href="create-network-load-balancer.html">Create a load balancer</a>.</p>
+<p><strong>To update the IP address type using the console</strong></p>
+<ol>
+<li>
+<p>Open the Amazon EC2 console at <a href="https://console.aws.amazon.com/ec2/">https://console.aws.amazon.com/ec2/</a>.</p>
+</li>
+<li>
+<p>On the navigation pane, under <strong>Load Balancing</strong>, choose <strong>Load Balancers</strong>.</p>
+</li>
+<li>
+<p>Select the load balancer.</p>
+</li>
+<li>
+<p>Choose <strong>Actions</strong>, <strong>Edit IP address type</strong>.</p>
+</li>
+<li>
+<p>For <strong>IP address type</strong>, choose <strong>ipv4</strong> to support IPv4 addresses only or <strong>dualstack</strong> to support both IPv4 and IPv6 addresses.</p>
+</li>
+<li>
+<p>Choose <strong>Save</strong>.</p>
+</li>
+</ol>
+<p><strong>To update the IP address type using the AWS CLI</strong><br>
+Use the <a href="https://docs.aws.amazon.com/cli/latest/reference/elbv2/set-ip-address-type.html">set-ip-address-type</a> command.</p>
+
+        
+        
+    </body>
+    </html>

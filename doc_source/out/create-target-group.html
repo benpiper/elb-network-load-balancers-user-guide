@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <title>Create a target group for your Network Load Balancer&lt;a name&equals;&quot;create-target-group&quot;&gt;&lt;&sol;a&gt;</title>
+        <style>
+/* From extension vscode.github */
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+
+.vscode-dark img[src$=\#gh-light-mode-only],
+.vscode-light img[src$=\#gh-dark-mode-only] {
+	display: none;
+}
+
+</style>
+        
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/markdown.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/highlight.css">
+<style>
+            body {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe WPC', 'Segoe UI', system-ui, 'Ubuntu', 'Droid Sans', sans-serif;
+                font-size: 14px;
+                line-height: 1.6;
+            }
+        </style>
+        <style>
+.task-list-item {
+    list-style-type: none;
+}
+
+.task-list-item-checkbox {
+    margin-left: -20px;
+    vertical-align: middle;
+    pointer-events: none;
+}
+</style>
+        
+    </head>
+    <body class="vscode-body vscode-light">
+        <h1 id="create-a-target-group-for-your-network-load-balancer">Create a target group for your Network Load Balancer<a name="create-target-group"></a></h1>
+<p>You register targets for your Network Load Balancer with a target group. By default, the load balancer sends requests to registered targets using the port and protocol that you specified for the target group. You can override this port when you register each target with the target group.</p>
+<p>After you create a target group, you can add tags.</p>
+<p>To route traffic to the targets in a target group, create a listener and specify the target group in the default action for the listener. For more information, see <a href="load-balancer-listeners.md#listener-rules">Listener rules</a>. You can specify the same target group in multiple listeners, but these listeners must belong to the same Network Load Balancer. To use a target group with a load balancer, you must verify that the target group is not in use by a listener for any other load balancer.</p>
+<p>You can add or remove targets from your target group at any time. For more information, see <a href="target-group-register-targets.html">Register targets with your target group</a>. You can also modify the health check settings for your target group. For more information, see <a href="target-group-health-checks.md#modify-health-check-settings">Modify the health check settings of a target group</a>.</p>
+<hr>
+<h4 id="-new-console-">[ New console ]</h4>
+<p><strong>To create a target group using the new console</strong></p>
+<ol>
+<li>
+<p>Open the Amazon EC2 console at <a href="https://console.aws.amazon.com/ec2/">https://console.aws.amazon.com/ec2/</a>.</p>
+</li>
+<li>
+<p>In the navigation pane, under <strong>Load Balancing</strong>, choose <strong>Target Groups</strong>.</p>
+</li>
+<li>
+<p>Choose <strong>Create target group</strong>.</p>
+</li>
+<li>
+<p>For <strong>Choose a target type</strong>, select <strong>Instances</strong> to register targets by instance ID; <strong>IP addresses</strong> to register targets by IP address; or <strong>Application Load Balancer</strong> to register an Application Load Balancer as a target.</p>
+</li>
+<li>
+<p>For <strong>Target group name</strong>, enter a name for the target group. This name must be unique per Region per account, can have a maximum of 32 characters, must contain only alphanumeric characters or hyphens, and must not begin or end with a hyphen.</p>
+</li>
+<li>
+<p>For <strong>Protocol</strong>, choose a protocol as follows:</p>
+<ul>
+<li>If the listener protocol is TCP, choose <strong>TCP</strong> or <strong>TCP_UDP</strong>.</li>
+<li>If the listener protocol is TLS, choose <strong>TCP</strong> or <strong>TLS</strong>.</li>
+<li>If the listener protocol is UDP, choose <strong>UDP</strong> or <strong>TCP_UDP</strong>.</li>
+<li>If the listener protocol is TCP_UDP, choose <strong>TCP_UDP</strong>.</li>
+</ul>
+</li>
+<li>
+<p>(Optional) For <strong>Port</strong>, modify the default value as needed.</p>
+</li>
+<li>
+<p>If the target type is <strong>IP addresses</strong>, choose <strong>IPv4</strong> or <strong>IPv6</strong> as the <strong>IP address type</strong>, otherwise skip to the next step.</p>
+<p>Note that you can associate IPv6 target groups only to a dualstack load balancer with TCP or TLS listeners. All targets in the target group must have the same IP address type. You can't change the IP address type once a target group is created.</p>
+</li>
+<li>
+<p>For <strong>VPC</strong>, select a virtual private cloud (VPC).</p>
+</li>
+<li>
+<p>In the <strong>Health checks</strong> section, modify the default settings as needed. Note that for IP address type targets, <strong>Health checks</strong> use the same IP address type as that of the target group.</p>
+<p>For <strong>Advanced health check settings</strong>, choose the health check port, count, timeout, interval, and specify success codes. If health checks consecutively exceed the <strong>Unhealthy threshold</strong> count, the load balancer takes the target out of service. If health checks consecutively exceed the <strong>Healthy threshold</strong> count, the load balancer puts the target back in service. For more information, see <a href="target-group-health-checks.html">Health checks for your target groups</a>.</p>
+</li>
+<li>
+<p>(Optional) Add one or more tags as follows:</p>
+<ol>
+<li>
+<p>Expand the <strong>Tags</strong> section.</p>
+</li>
+<li>
+<p>Choose <strong>Add tag</strong>.</p>
+</li>
+<li>
+<p>Enter the tag <strong>Key</strong> and <strong>Value</strong>. Allowed characters are letters, spaces, numbers (in UTF-8), and the following special characters: + - = . _ : / @. Do not use leading or trailing spaces. Tag values are case-sensitive.</p>
+</li>
+</ol>
+</li>
+<li>
+<p>Choose <strong>Next</strong>.</p>
+</li>
+<li>
+<p>In the <strong>Register targets</strong> page, add one or more targets as follows:</p>
+<ul>
+<li>
+<p>If the target type is <strong>Instances</strong>, select one or more instances, enter one or more ports, and then choose <strong>Include as pending below</strong>.</p>
+</li>
+<li>
+<p>If the target type is <strong>IP addresses</strong>, do the following:</p>
+<ol>
+<li>
+<p>Select a network <strong>VPC</strong> from the list, or choose <strong>Other private IP addresses</strong>.</p>
+</li>
+<li>
+<p>Enter the IP address manually, or find the IP address using instance details. You can enter up to five IP addresses at a time.</p>
+</li>
+<li>
+<p>Enter the ports for routing traffic to the specified IP addresses.</p>
+</li>
+<li>
+<p>Choose <strong>Include as pending below</strong>.</p>
+</li>
+</ol>
+</li>
+</ul>
+</li>
+<li>
+<p>Choose <strong>Create target group</strong>.</p>
+</li>
+</ol>
+<hr>
+<h4 id="-old-console-">[ Old console ]</h4>
+<p><strong>To create a target group using the old console</strong></p>
+<ol>
+<li>
+<p>Open the Amazon EC2 console at <a href="https://console.aws.amazon.com/ec2/">https://console.aws.amazon.com/ec2/</a>.</p>
+</li>
+<li>
+<p>In the navigation pane, under <strong>Load Balancing</strong>, choose <strong>Target Groups</strong>.</p>
+</li>
+<li>
+<p>Choose <strong>Create target group</strong>.</p>
+</li>
+<li>
+<p>For <strong>Target group name</strong>, enter a name for the target group. This name must be unique per Region per account, can have a maximum of 32 characters, must contain only alphanumeric characters or hyphens, and must not begin or end with a hyphen.</p>
+</li>
+<li>
+<p>For <strong>Protocol</strong>, choose a protocol as follows:</p>
+<ul>
+<li>If the listener protocol is TCP, choose <strong>TCP</strong> or <strong>TCP_UDP</strong>.</li>
+<li>If the listener protocol is TLS, choose <strong>TCP</strong> or <strong>TLS</strong>.</li>
+<li>If the listener protocol is UDP, choose <strong>UDP</strong> or <strong>TCP_UDP</strong>.</li>
+<li>If the listener protocol is TCP_UDP, choose <strong>TCP_UDP</strong>.</li>
+</ul>
+</li>
+<li>
+<p>(Optional) For <strong>Port</strong>, modify the default value as needed.</p>
+</li>
+<li>
+<p>For <strong>Target type</strong>, select <code>instance</code> to specify targets by instance ID or <code>ip</code> to specify targets by IP address.</p>
+</li>
+<li>
+<p>For <strong>VPC</strong>, select a virtual private cloud (VPC).</p>
+</li>
+<li>
+<p>(Optional) For <strong>Health check settings</strong> and <strong>Advanced health check settings</strong>, modify the default settings as needed. Choose <strong>Create</strong>.</p>
+</li>
+<li>
+<p>(Optional) Add one or more tags as follows:</p>
+<ol>
+<li>
+<p>Select the newly created target group.</p>
+</li>
+<li>
+<p>Choose <strong>Tags</strong>, <strong>Add/Edit Tags</strong>.</p>
+</li>
+<li>
+<p>On the <strong>Add/Edit Tags</strong> page, for each tag that you add, choose <strong>Create Tag</strong> and then specify the tag key and tag value. When you have finished adding tags, choose <strong>Save</strong>.</p>
+</li>
+</ol>
+</li>
+<li>
+<p>(Optional) To add targets to the target group, see <a href="target-group-register-targets.html">Register targets with your target group</a>.</p>
+</li>
+<li>
+<p>(Optional) You can specify the target group in the default listener rule. For more information, see <a href="create-listener.html">Create a Listener</a> and <a href="listener-update-rules.html">Update a Listener</a>.</p>
+</li>
+</ol>
+<hr>
+<p><strong>To create a target group using the AWS CLI</strong><br>
+Use the <a href="https://docs.aws.amazon.com/cli/latest/reference/elbv2/create-target-group.html">create-target-group</a> command to create the target group, the <a href="https://docs.aws.amazon.com/cli/latest/reference/elbv2/add-tags.html">add-tags</a> command to tag your target group, and the <a href="https://docs.aws.amazon.com/cli/latest/reference/elbv2/register-targets.html">register-targets</a> command to add targets.</p>
+
+        
+        
+    </body>
+    </html>

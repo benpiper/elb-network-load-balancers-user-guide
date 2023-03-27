@@ -1,0 +1,901 @@
+<!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <title>TLS listeners for your Network Load Balancer&lt;a name&equals;&quot;create-tls-listener&quot;&gt;&lt;&sol;a&gt;</title>
+        <style>
+/* From extension vscode.github */
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+
+.vscode-dark img[src$=\#gh-light-mode-only],
+.vscode-light img[src$=\#gh-dark-mode-only] {
+	display: none;
+}
+
+</style>
+        
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/markdown.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/highlight.css">
+<style>
+            body {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe WPC', 'Segoe UI', system-ui, 'Ubuntu', 'Droid Sans', sans-serif;
+                font-size: 14px;
+                line-height: 1.6;
+            }
+        </style>
+        <style>
+.task-list-item {
+    list-style-type: none;
+}
+
+.task-list-item-checkbox {
+    margin-left: -20px;
+    vertical-align: middle;
+    pointer-events: none;
+}
+</style>
+        
+    </head>
+    <body class="vscode-body vscode-light">
+        <h1 id="tls-listeners-for-your-network-load-balancer">TLS listeners for your Network Load Balancer<a name="create-tls-listener"></a></h1>
+<p>To use a TLS listener, you must deploy at least one server certificate on your load balancer. The load balancer uses a server certificate to terminate the front-end connection and then to decrypt requests from clients before sending them to the targets. Note that if you need to pass encrypted traffic to the targets without the load balancer decrypting it, create a TCP listener on port 443 instead of creating a TLS listener. The load balancer passes the request to the target as is, without decrypting it.</p>
+<p>Elastic Load Balancing uses a TLS negotiation configuration, known as a security policy, to negotiate TLS connections between a client and the load balancer. A security policy is a combination of protocols and ciphers. The protocol establishes a secure connection between a client and a server and ensures that all data passed between the client and your load balancer is private. A cipher is an encryption algorithm that uses encryption keys to create a coded message. Protocols use several ciphers to encrypt data over the internet. During the connection negotiation process, the client and the load balancer present a list of ciphers and protocols that they each support, in order of preference. The first cipher on the server's list that matches any one of the client's ciphers is selected for the secure connection.</p>
+<p>Network Load Balancers do not support TLS renegotiation or mutual TLS authentication (mTLS). For mTLS support, create a TCP listener instead of a TLS listener. The load balancer passes the request through as is, so you can implement mTLS on the target.</p>
+<p>To create a TLS listener, see <a href="create-listener.md#add-listener">Add a listener</a>. For related demos, see <a href="https://exampleloadbalancer.com/nlbtls_demo.html">TLS Support on Network Load Balancer</a> and <a href="https://exampleloadbalancer.com/nlbsni_demo.html">SNI Support on Network Load Balancer</a>.</p>
+<h2 id="server-certificates">Server certificates<a name="tls-listener-certificates"></a></h2>
+<p>The load balancer requires X.509 certificates (server certificate). Certificates are a digital form of identification issued by a certificate authority (CA). A certificate contains identification information, a validity period, a public key, a serial number, and the digital signature of the issuer.</p>
+<p>When you create a certificate for use with your load balancer, you must specify a domain name.</p>
+<p>We recommend that you create certificates for your load balancers using <a href="https://aws.amazon.com/certificate-manager/">AWS Certificate Manager (ACM)</a>. ACM integrates with Elastic Load Balancing so that you can deploy the certificate on your load balancer. For more information, see the <a href="https://docs.aws.amazon.com/acm/latest/userguide/">AWS Certificate Manager User Guide</a>.</p>
+<p>Alternatively, you can use TLS tools to create a certificate signing request (CSR), then get the CSR signed by a CA to produce a certificate, then import the certificate into ACM or upload the certificate to AWS Identity and Access Management (IAM). For more information, see <a href="https://docs.aws.amazon.com/acm/latest/userguide/import-certificate.html">Importing certificates</a> in the <em>AWS Certificate Manager User Guide</em> or <a href="https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_server-certs.html">Working with server certificates</a> in the <em>IAM User Guide</em>.</p>
+<p><strong>Important</strong><br>
+You cannot install certificates with RSA keys larger than 2048-bit or EC keys on your Network Load Balancer.</p>
+<h3 id="default-certificate">Default certificate<a name="default-certificate"></a></h3>
+<p>When you create a TLS listener, you must specify exactly one certificate. This certificate is known as the <em>default certificate</em>. You can replace the default certificate after you create the TLS listener. For more information, see <a href="listener-update-certificates.md#replace-default-certificate">Replace the default certificate</a>.</p>
+<p>If you specify additional certificates in a <a href="#sni-certificate-list">certificate list</a>, the default certificate is used only if a client connects without using the Server Name Indication (SNI) protocol to specify a hostname or if there are no matching certificates in the certificate list.</p>
+<p>If you do not specify additional certificates but need to host multiple secure applications through a single load balancer, you can use a wildcard certificate or add a Subject Alternative Name (SAN) for each additional domain to your certificate.</p>
+<h3 id="certificate-list">Certificate list<a name="sni-certificate-list"></a></h3>
+<p>After you create a TLS listener, it has a default certificate and an empty certificate list. You can optionally add certificates to the certificate list for the listener. Using a certificate list enables the load balancer to support multiple domains on the same port and provide a different certificate for each domain. For more information, see <a href="listener-update-certificates.md#add-certificates">Add certificates to the certificate list</a>.</p>
+<p>The load balancer uses a smart certificate selection algorithm with support for SNI. If the hostname provided by a client matches a single certificate in the certificate list, the load balancer selects this certificate. If a hostname provided by a client matches multiple certificates in the certificate list, the load balancer selects the best certificate that the client can support. Certificate selection is based on the following criteria in the following order:</p>
+<ul>
+<li>Hashing algorithm (prefer SHA over MD5)</li>
+<li>Key length (prefer the largest)</li>
+<li>Validity period</li>
+</ul>
+<p>The load balancer access log entries indicate the hostname specified by the client and the certificate presented to the client. For more information, see <a href="load-balancer-access-logs.md#access-log-entry-format">Access log entries</a>.</p>
+<h3 id="certificate-renewal">Certificate renewal<a name="ssl-certificate-renewal"></a></h3>
+<p>Each certificate comes with a validity period. You must ensure that you renew or replace each certificate for your load balancer before its validity period ends. This includes the default certificate and certificates in a certificate list. Renewing or replacing a certificate does not affect in-flight requests that were received by the load balancer node and are pending routing to a healthy target. After a certificate is renewed, new requests use the renewed certificate. After a certificate is replaced, new requests use the new certificate.</p>
+<p>You can manage certificate renewal and replacement as follows:</p>
+<ul>
+<li>Certificates provided by AWS Certificate Manager and deployed on your load balancer can be renewed automatically. ACM attempts to renew certificates before they expire. For more information, see <a href="https://docs.aws.amazon.com/acm/latest/userguide/acm-renewal.html">Managed renewal</a> in the <em>AWS Certificate Manager User Guide</em>.</li>
+<li>If you imported a certificate into ACM, you must monitor the expiration date of the certificate and renew it before it expires. For more information, see <a href="https://docs.aws.amazon.com/acm/latest/userguide/import-certificate.html">Importing certificates</a> in the <em>AWS Certificate Manager User Guide</em>.</li>
+<li>If you imported a certificate into IAM, you must create a new certificate, import the new certificate to ACM or IAM, add the new certificate to your load balancer, and remove the expired certificate from your load balancer.</li>
+</ul>
+<h2 id="security-policies">Security policies<a name="describe-ssl-policies"></a></h2>
+<p>When you create a TLS listener, you must select a security policy. You can update the security policy as needed. For more information, see <a href="listener-update-certificates.md#update-security-policy">Update the security policy</a>.</p>
+<p>You can choose the security policy that is used for front-end connections. For backend connections, if your TLS listener is using a TLS 1.3 security policy, the <code>ELBSecurityPolicy-TLS13-1-0-2021-06</code> security policy is used. Otherwise, the <code>ELBSecurityPolicy-2016-08</code> security policy is used for backend connections. Network Load Balancers do not support custom security policies.</p>
+<p>Elastic Load Balancing provides the following security policies for Network Load Balancers:</p>
+<ul>
+<li><code>ELBSecurityPolicy-TLS13-1-2-2021-06</code>*</li>
+<li><code>ELBSecurityPolicy-TLS13-1-2-Res-2021-06</code></li>
+<li><code>ELBSecurityPolicy-TLS13-1-2-Ext1-2021-06</code></li>
+<li><code>ELBSecurityPolicy-TLS13-1-2-Ext2-2021-06</code></li>
+<li><code>ELBSecurityPolicy-TLS13-1-1-2021-06</code></li>
+<li><code>ELBSecurityPolicy-TLS13-1-0-2021-06</code></li>
+<li><code>ELBSecurityPolicy-TLS13-1-3-2021-06</code></li>
+<li><code>ELBSecurityPolicy-FS-1-2-Res-2020-10</code></li>
+<li><code>ELBSecurityPolicy-FS-1-2-Res-2019-08</code></li>
+<li><code>ELBSecurityPolicy-FS-1-2-2019-08</code></li>
+<li><code>ELBSecurityPolicy-FS-1-1-2019-08</code></li>
+<li><code>ELBSecurityPolicy-FS-2018-06</code></li>
+<li><code>ELBSecurityPolicy-TLS-1-2-Ext-2018-06</code></li>
+<li><code>ELBSecurityPolicy-TLS-1-2-2017-01</code></li>
+<li><code>ELBSecurityPolicy-TLS-1-1-2017-01</code></li>
+<li><code>ELBSecurityPolicy-2016-08</code>**</li>
+<li><code>ELBSecurityPolicy-TLS-1-0-2015-04</code></li>
+<li><code>ELBSecurityPolicy-2015-05</code> (identical to <code>ELBSecurityPolicy-2016-08</code>)</li>
+</ul>
+<p>*For TLS listeners, we recommend using the <code>ELBSecurityPolicy-TLS13-1-2-2021-06</code> security policy. This is the default policy for listeners created using the AWS Management Console. This security policy includes TLS 1.3, which is optimized for security and performance, and is backward compatible with TLS 1.2.</p>
+<p>**<code>ELBSecurityPolicy-2016-08</code> is the default security policy for listeners created using the AWS CLI.</p>
+<p>For Forward Secrecy, you can use one of the <code>ELBSecurityPolicy-FS</code> policies or an <code>ELBSecurityPolicy-TLS13</code> policy. To meet compliance and security standards that require disabling certain TLS protocol versions, or to support legacy clients that require deprecated ciphers, use one of the <code>ELBSecurityPolicy-TLS</code> policies. Only a small percentage of internet clients require TLS version 1.0.</p>
+<p>You can enable access logs for information about the TLS requests sent to your Network Load Balancer, analyze TLS traffic patterns to manage security policy upgrades, and troubleshoot issues. For more information, see <a href="load-balancer-access-logs.html">Access Logs</a> and <a href="https://docs.aws.amazon.com/athena/latest/ug/networkloadbalancer-classic-logs.html#query-nlb-example">Network Load Balancer Example Queries</a>.</p>
+<h3 id="tls-13-security-policies">TLS 1.3 security policies<a name="tls13-security-policies"></a></h3>
+<p>The following table describes the recommended policy (<code>ELBSecurityPolicy-TLS13-1-2-2021-06</code>) and the other TLS 1.3 policies. The <code>ELBSecurityPolicy-</code> prefix has been removed from policy names in the heading row so that they fit.</p>
+<table>
+<thead>
+<tr>
+<th>Security policies</th>
+<th><img src="http://docs.aws.amazon.com/elasticloadbalancing/latest/network/images/TLS13-1-2-2021-06.png" alt="[TLS13-1-2-2021-06*]"></th>
+<th><img src="http://docs.aws.amazon.com/elasticloadbalancing/latest/network/images/TLS13-1-3-2021-06.png" alt="[TLS13-1-3-2021-06]"></th>
+<th><img src="http://docs.aws.amazon.com/elasticloadbalancing/latest/network/images/TLS13-1-2-Res-2021-06.png" alt="[TLS13-1-2-Res-2021-06]"></th>
+<th><img src="http://docs.aws.amazon.com/elasticloadbalancing/latest/network/images/TLS13-1-2-Ext2-2021-06.png" alt="[TLS13-1-2-Ext2-2021-06]"></th>
+<th><img src="http://docs.aws.amazon.com/elasticloadbalancing/latest/network/images/TLS13-1-2-Ext1-2021-06.png" alt="[TLS13-1-2-Ext1-2021-06]"></th>
+<th><img src="http://docs.aws.amazon.com/elasticloadbalancing/latest/network/images/TLS13-1-1-2021-06.png" alt="[TLS13-1-1-2021-06]"></th>
+<th><img src="http://docs.aws.amazon.com/elasticloadbalancing/latest/network/images/TLS13-1-0-2021-06.png" alt="[TLS13-1-0-2021-06]"></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>TLS Protocols</strong></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>---</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>Protocol-TLSv1</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td>✓</td>
+</tr>
+<tr>
+<td>Protocol-TLSv1.1</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td>✓</td>
+<td>✓</td>
+</tr>
+<tr>
+<td>Protocol-TLSv1.2</td>
+<td>✓</td>
+<td></td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+</tr>
+<tr>
+<td>Protocol-TLSv1.3</td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+</tr>
+<tr>
+<td><strong>TLS Ciphers</strong></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>---</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>TLS-AES-128-GCM-SHA256</td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+</tr>
+<tr>
+<td>TLS-AES-256-GCM-SHA384</td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+</tr>
+<tr>
+<td>TLS-CHACHA20-POLY1305-SHA256</td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+</tr>
+<tr>
+<td>ECDHE-ECDSA-AES128-GCM-SHA256</td>
+<td>✓</td>
+<td></td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+</tr>
+<tr>
+<td>ECDHE-RSA-AES128-GCM-SHA256</td>
+<td>✓</td>
+<td></td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+</tr>
+<tr>
+<td>ECDHE-ECDSA-AES128-SHA256</td>
+<td>✓</td>
+<td></td>
+<td></td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+</tr>
+<tr>
+<td>ECDHE-RSA-AES128-SHA256</td>
+<td>✓</td>
+<td></td>
+<td></td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+</tr>
+<tr>
+<td>ECDHE-ECDSA-AES128-SHA</td>
+<td></td>
+<td></td>
+<td></td>
+<td>✓</td>
+<td></td>
+<td>✓</td>
+<td>✓</td>
+</tr>
+<tr>
+<td>ECDHE-RSA-AES128-SHA</td>
+<td></td>
+<td></td>
+<td></td>
+<td>✓</td>
+<td></td>
+<td>✓</td>
+<td>✓</td>
+</tr>
+<tr>
+<td>ECDHE-ECDSA-AES256-GCM-SHA384</td>
+<td>✓</td>
+<td></td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+</tr>
+<tr>
+<td>ECDHE-RSA-AES256-GCM-SHA384</td>
+<td>✓</td>
+<td></td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+</tr>
+<tr>
+<td>ECDHE-ECDSA-AES256-SHA384</td>
+<td>✓</td>
+<td></td>
+<td></td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+</tr>
+<tr>
+<td>ECDHE-RSA-AES256-SHA384</td>
+<td>✓</td>
+<td></td>
+<td></td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+</tr>
+<tr>
+<td>ECDHE-RSA-AES256-SHA</td>
+<td></td>
+<td></td>
+<td></td>
+<td>✓</td>
+<td></td>
+<td>✓</td>
+<td>✓</td>
+</tr>
+<tr>
+<td>ECDHE-ECDSA-AES256-SHA</td>
+<td></td>
+<td></td>
+<td></td>
+<td>✓</td>
+<td></td>
+<td>✓</td>
+<td>✓</td>
+</tr>
+<tr>
+<td>AES128-GCM-SHA256</td>
+<td></td>
+<td></td>
+<td></td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+</tr>
+<tr>
+<td>AES128-SHA256</td>
+<td></td>
+<td></td>
+<td></td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+</tr>
+<tr>
+<td>AES128-SHA</td>
+<td></td>
+<td></td>
+<td></td>
+<td>✓</td>
+<td></td>
+<td>✓</td>
+<td>✓</td>
+</tr>
+<tr>
+<td>AES256-GCM-SHA384</td>
+<td></td>
+<td></td>
+<td></td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+</tr>
+<tr>
+<td>AES256-SHA256</td>
+<td></td>
+<td></td>
+<td></td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+</tr>
+<tr>
+<td>AES256-SHA</td>
+<td></td>
+<td></td>
+<td></td>
+<td>✓</td>
+<td></td>
+<td>✓</td>
+<td>✓</td>
+</tr>
+</tbody>
+</table>
+<p>To view the configuration of a security policy for your load balancer using the AWS CLI, use the <a href="https://docs.aws.amazon.com/cli/latest/reference/elbv2/describe-ssl-policies.html">describe-ssl-policies</a> command. The default policy in the AWS CLI is <code>ELBSecurityPolicy-2016-08</code>. To upgrade to a TLS 1.3 security policy using the AWS CLI, use the <code>ssl-policy</code> parameter with the <a href="https://docs.aws.amazon.com/cli/latest/reference/elbv2/create-listener.html">create-listener</a> and <a href="https://docs.aws.amazon.com/cli/latest/reference/elbv2/modify-listener.html">modify-listener</a> commands.</p>
+<h3 id="fs-security-policies">FS security policies<a name="fs-security-policies"></a></h3>
+<p>The following table describes the default policy <code>ELBSecurityPolicy-2016-08</code> (default in the AWS CLI) and the <code>ELBSecurityPolicy-FS</code> policies. <code>ELBSecurityPolicy-</code> prefix has been removed from policy names in the heading row so that they fit.</p>
+<table>
+<thead>
+<tr>
+<th>Security policies</th>
+<th><img src="http://docs.aws.amazon.com/elasticloadbalancing/latest/network/images/FS-default.png" alt="[ELBSecurityPolicy-2016-08]"></th>
+<th><img src="http://docs.aws.amazon.com/elasticloadbalancing/latest/network/images/FS-1-2-Res-2020-10.png" alt="[ELBSecurityPolicy-FS-1-2-Res-2020-10]"></th>
+<th><img src="http://docs.aws.amazon.com/elasticloadbalancing/latest/network/images/FS-1-2-Res-2019-08.png" alt="[ELBSecurityPolicy-FS-1-2-Res-2019-08]"></th>
+<th><img src="http://docs.aws.amazon.com/elasticloadbalancing/latest/network/images/FS-1-2-2019-08.png" alt="[ELBSecurityPolicy-FS-1-2-2019-08]"></th>
+<th><img src="http://docs.aws.amazon.com/elasticloadbalancing/latest/network/images/FS-1-1-2019-08.png" alt="[ELBSecurityPolicy-FS-1-1-2019-08]"></th>
+<th><img src="http://docs.aws.amazon.com/elasticloadbalancing/latest/network/images/FS-2018-06.png" alt="[ELBSecurityPolicy-FS-2018-06]"></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>TLS Protocols</strong></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>---</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>Protocol-TLSv1</td>
+<td>✓</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td>✓</td>
+</tr>
+<tr>
+<td>Protocol-TLSv1.1</td>
+<td>✓</td>
+<td></td>
+<td></td>
+<td></td>
+<td>✓</td>
+<td>✓</td>
+</tr>
+<tr>
+<td>Protocol-TLSv1.2</td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+</tr>
+<tr>
+<td><strong>TLS Ciphers</strong></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>---</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>ECDHE-ECDSA-AES128-GCM-SHA256</td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+</tr>
+<tr>
+<td>ECDHE-RSA-AES128-GCM-SHA256</td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+</tr>
+<tr>
+<td>ECDHE-ECDSA-AES128-SHA256</td>
+<td>✓</td>
+<td></td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+</tr>
+<tr>
+<td>ECDHE-RSA-AES128-SHA256</td>
+<td>✓</td>
+<td></td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+</tr>
+<tr>
+<td>ECDHE-ECDSA-AES128-SHA</td>
+<td>✓</td>
+<td></td>
+<td></td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+</tr>
+<tr>
+<td>ECDHE-RSA-AES128-SHA</td>
+<td>✓</td>
+<td></td>
+<td></td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+</tr>
+<tr>
+<td>ECDHE-ECDSA-AES256-GCM-SHA384</td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+</tr>
+<tr>
+<td>ECDHE-RSA-AES256-GCM-SHA384</td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+</tr>
+<tr>
+<td>ECDHE-ECDSA-AES256-SHA384</td>
+<td>✓</td>
+<td></td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+</tr>
+<tr>
+<td>ECDHE-RSA-AES256-SHA384</td>
+<td>✓</td>
+<td></td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+</tr>
+<tr>
+<td>ECDHE-RSA-AES256-SHA</td>
+<td>✓</td>
+<td></td>
+<td></td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+</tr>
+<tr>
+<td>ECDHE-ECDSA-AES256-SHA</td>
+<td>✓</td>
+<td></td>
+<td></td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+</tr>
+<tr>
+<td>AES128-GCM-SHA256</td>
+<td>✓</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>AES128-SHA256</td>
+<td>✓</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>AES128-SHA</td>
+<td>✓</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>AES256-GCM-SHA384</td>
+<td>✓</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>AES256-SHA256</td>
+<td>✓</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>AES256-SHA</td>
+<td>✓</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h3 id="tls-security-policies">TLS security policies<a name="tls-security-policies"></a></h3>
+<p>The following table describes the default policy <code>ELBSecurityPolicy-2016-08</code> (default in the AWS CLI), and the <code>ELBSecurityPolicy-TLS</code> policies. The <code>ELBSecurityPolicy-</code> prefix has been removed from policy names in the heading row so that they fit.</p>
+<table>
+<thead>
+<tr>
+<th>Security policies</th>
+<th><img src="http://docs.aws.amazon.com/elasticloadbalancing/latest/network/images/FS-default.png" alt="[ELBSecurityPolicy-2016-08]"></th>
+<th><img src="http://docs.aws.amazon.com/elasticloadbalancing/latest/network/images/TLS-1-2-Ext-2018-06.png" alt="[ELBSecurityPolicy-TLS-1-2-Ext-2018-06]"></th>
+<th><img src="http://docs.aws.amazon.com/elasticloadbalancing/latest/network/images/TLS-1-2-2017-01.png" alt="[ELBSecurityPolicy-TLS-1-2-2017-01]"></th>
+<th><img src="http://docs.aws.amazon.com/elasticloadbalancing/latest/network/images/TSL-1-1-2017-01.png" alt="[ELBSecurityPolicy-TSL-1-1-2017-01]"></th>
+<th><img src="http://docs.aws.amazon.com/elasticloadbalancing/latest/network/images/TLS-1-0-2015-04.png" alt="[ELBSecurityPolicy-TLS-1-0-2015-04]"></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>TLS Protocols</strong></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>---</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>Protocol-TLSv1</td>
+<td>✓</td>
+<td></td>
+<td></td>
+<td></td>
+<td>✓</td>
+</tr>
+<tr>
+<td>Protocol-TLSv1.1</td>
+<td>✓</td>
+<td></td>
+<td></td>
+<td>✓</td>
+<td>✓</td>
+</tr>
+<tr>
+<td>Protocol-TLSv1.2</td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+</tr>
+<tr>
+<td><strong>TLS Ciphers</strong></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>---</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>ECDHE-ECDSA-AES128-GCM-SHA256</td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+</tr>
+<tr>
+<td>ECDHE-RSA-AES128-GCM-SHA256</td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+</tr>
+<tr>
+<td>ECDHE-ECDSA-AES128-SHA256</td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+</tr>
+<tr>
+<td>ECDHE-RSA-AES128-SHA256</td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+</tr>
+<tr>
+<td>ECDHE-ECDSA-AES128-SHA</td>
+<td>✓</td>
+<td>✓</td>
+<td></td>
+<td>✓</td>
+<td>✓</td>
+</tr>
+<tr>
+<td>ECDHE-RSA-AES128-SHA</td>
+<td>✓</td>
+<td>✓</td>
+<td></td>
+<td>✓</td>
+<td>✓</td>
+</tr>
+<tr>
+<td>ECDHE-ECDSA-AES256-GCM-SHA384</td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+</tr>
+<tr>
+<td>ECDHE-RSA-AES256-GCM-SHA384</td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+</tr>
+<tr>
+<td>ECDHE-ECDSA-AES256-SHA384</td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+</tr>
+<tr>
+<td>ECDHE-RSA-AES256-SHA384</td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+</tr>
+<tr>
+<td>ECDHE-RSA-AES256-SHA</td>
+<td>✓</td>
+<td>✓</td>
+<td></td>
+<td>✓</td>
+<td>✓</td>
+</tr>
+<tr>
+<td>ECDHE-ECDSA-AES256-SHA</td>
+<td>✓</td>
+<td>✓</td>
+<td></td>
+<td>✓</td>
+<td>✓</td>
+</tr>
+<tr>
+<td>AES128-GCM-SHA256</td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+</tr>
+<tr>
+<td>AES128-SHA256</td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+</tr>
+<tr>
+<td>AES128-SHA</td>
+<td>✓</td>
+<td>✓</td>
+<td></td>
+<td>✓</td>
+<td>✓</td>
+</tr>
+<tr>
+<td>AES256-GCM-SHA384</td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+</tr>
+<tr>
+<td>AES256-SHA256</td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+</tr>
+<tr>
+<td>AES256-SHA</td>
+<td>✓</td>
+<td>✓</td>
+<td></td>
+<td>✓</td>
+<td>✓</td>
+</tr>
+<tr>
+<td>DES-CBC3-SHA</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td>✓</td>
+</tr>
+</tbody>
+</table>
+<p>*****Do not use this policy unless you must support a legacy client that requires the DES-CBC3-SHA cipher, which is a weak cipher.</p>
+<p>To view the configuration of a security policy for your load balancer using the AWS CLI, use the <a href="https://docs.aws.amazon.com/cli/latest/reference/elbv2/describe-ssl-policies.html">describe-ssl-policies</a> command.</p>
+<h2 id="alpn-policies">ALPN policies<a name="alpn-policies"></a></h2>
+<p>Application-Layer Protocol Negotiation (ALPN) is a TLS extension that is sent on the initial TLS handshake hello messages. ALPN enables the application layer to negotiate which protocols should be used over a secure connection, such as HTTP/1 and HTTP/2.</p>
+<p>When the client initiates an ALPN connection, the load balancer compares the client ALPN preference list with its ALPN policy. If the client supports a protocol from the ALPN policy, the load balancer establishes the connection based on the preference list of the ALPN policy. Otherwise, the load balancer does not use ALPN.Supported ALPN Policies</p>
+<p>The following are the supported ALPN policies:</p>
+<p><code>HTTP1Only</code><br>
+Negotiate only HTTP/1.*. The ALPN preference list is http/1.1, http/1.0.</p>
+<p><code>HTTP2Only</code><br>
+Negotiate only HTTP/2. The ALPN preference list is h2.</p>
+<p><code>HTTP2Optional</code><br>
+Prefer HTTP/1.* over HTTP/2 (which can be useful for HTTP/2 testing). The ALPN preference list is http/1.1, http/1.0, h2.</p>
+<p><code>HTTP2Preferred</code><br>
+Prefer HTTP/2 over HTTP/1.*. The ALPN preference list is h2, http/1.1, http/1.0.</p>
+<p><code>None</code><br>
+Do not negotiate ALPN. This is the default.</p>
+<p><strong>Enable ALPN Connections</strong><br>
+You can enable ALPN connections when you create or modify a TLS listener. For more information, see <a href="create-listener.md#add-listener">Add a listener</a> and <a href="listener-update-certificates.md#update-alpn-policy">Update the ALPN policy</a>.</p>
+
+        
+        
+    </body>
+    </html>
