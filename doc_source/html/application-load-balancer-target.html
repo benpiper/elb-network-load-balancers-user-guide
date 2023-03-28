@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>application-load-balancer-target</title>
+  <style>
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    span.underline{text-decoration: underline;}
+    div.column{display: inline-block; vertical-align: top; width: 50%;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    ul.task-list{list-style: none;}
+  </style>
+</head>
+<body>
+<h1 id="application-load-balancers-as-targets">Application Load Balancers as targets<a name="application-load-balancer-target"></a></h1>
+<p>You can create a target group with a single Application Load Balancer as the target, and configure your Network Load Balancer to forward traffic to it. In this scenario, the Application Load Balancer takes over the load balancing decision as soon as traffic reaches it. This configuration combines the features of both load balancers and offers the following advantages: + You can use the layer 7 request-based routing feature of the Application Load Balancer in combination with features that the Network Load Balancer supports, such as endpoint services (AWS PrivateLink) and static IP addresses. + The configuration works well for applications that use multi-protocol connections, such as media services using HTTP for signaling, and RTP to stream content.</p>
+<p>You can use this feature with an internal or internet-facing Application Load Balancer as the target of an internal or internet-facing Network Load Balancer.</p>
+<h2 id="step-1-create-the-application-load-balancer">Step 1: Create the Application Load Balancer<a name="create-new-application-load-balancer-target"></a></h2>
+<p>Before you begin, configure the target groups that this Application Load Balancer will route traffic to. Ensure that you have a virtual private cloud (VPC) with the instances that you want to include in the target group, and at least one public subnet in each of the Availability Zones used by your targets.</p>
+<p><strong>To create the Application Load Balancer using the console</strong></p>
+<ol type="1">
+<li><p>Open the Amazon EC2 console at <a href="https://console.aws.amazon.com/ec2/">https://console.aws.amazon.com/ec2/</a>.</p></li>
+<li><p>On the navigation pane, under <strong>Load Balancing</strong>, choose <strong>Load Balancers</strong>.</p></li>
+<li><p>Choose <strong>Create load balancer</strong>.</p></li>
+<li><p>Under <strong>Application Load Balancer</strong>, choose <strong>Create</strong>.</p></li>
+<li><p>On the <strong>Create Application Load Balancer</strong> page, under <strong>Basic configuration</strong>, specify the <strong>Load balancer name</strong>, <strong>Scheme</strong>, and <strong>IP address type</strong>.</p></li>
+<li><p>For <strong>Listeners</strong>, you can create an HTTP or HTTPS listener on any port. However, you must ensure that the port number of this listener matches the port of the target group in which this Application Load Balancer will reside.</p></li>
+<li><p>Under <strong>Availability Zones</strong>, do the following:</p>
+<ol type="1">
+<li><p>For <strong>VPC</strong>, select a virtual private cloud (VPC) with instances or IP addresses that you included as targets of your Application Load Balancer. You must use the same VPC that you would use for your Network Load Balancer in <a href="#configure-application-load-balancer-target">Step 3: Create a Network Load Balancer, and configure the Application Load Balancer as its target</a>.</p></li>
+<li><p>Select two or more <strong>Availability Zones</strong> and corresponding subnets. Ensure that these Availability Zones match those enabled for your Network Load Balancer to optimize availability, scaling, and performance.</p></li>
+</ol></li>
+<li><p>You can <strong>Assign a security group</strong> to your load balancer by creating a new security group or by selecting an existing one.</p>
+<p>The security group that you select should contain a rule that allows traffic to the listener port for this load balancer. Use the CIDR blocks (IP address range) of the client’s computers as the traffic source in the inbound rules for security groups. This allows clients to send traffic through this Application Load Balancer. For more information on configuring security groups for an Application Load Balancer as a target of a Network Load Balancer, see <a href="https://docs.aws.amazon.com/elasticloadbalancing/latest/application/load-balancer-update-security-groups.html">Security groups for your Application Load Balancer</a> in the <em>User Guide for Application Load Balancers</em>.</p></li>
+<li><p>For <strong>Configure Routing</strong>, select the target group that you configured for this Application Load Balancer. If you don’t have an available target group, and want to configure a new one, see <a href="https://docs.aws.amazon.com/elasticloadbalancing/latest/application/create-target-group.html">Create a target group</a> in the <em>User Guide for Application Load Balancers</em>.</p></li>
+<li><p>Review your configuration, and choose <strong>Create load balancer</strong>.</p></li>
+</ol>
+<p><strong>To create the Application Load Balancer using the AWS CLI</strong><br />
+Use the <a href="https://docs.aws.amazon.com/cli/latest/reference/elbv2/create-load-balancer.html">create-load-balancer</a> command.</p>
+<h2 id="step-2-create-the-target-group-with-the-application-load-balancer-as-the-target">Step 2: Create the target group with the Application Load Balancer as the target<a name="register-application-load-balancer-target"></a></h2>
+<p>Creating a target group allows you to register a new or existing Application Load Balancer as a target. You can only add one Application Load Balancer per target group. The same Application Load Balancer can also be used in a separate target group, as the target of up to two Network Load Balancers.</p>
+<p><strong>To create a target group and register the Application Load Balancer as a target, using the new console</strong></p>
+<ol type="1">
+<li><p>Open the Amazon EC2 console at <a href="https://console.aws.amazon.com/ec2/">https://console.aws.amazon.com/ec2/</a>.</p>
+<p>Note that for this feature, you must turn on the <strong>New EC2 Experience</strong>. Use the toggle button on the top left corner of the navigation pane to switch to the new console.</p></li>
+<li><p>On the navigation pane, under <strong>Load Balancing</strong>, choose <strong>Target Groups</strong>.</p></li>
+<li><p>Choose <strong>Create target group</strong>.</p></li>
+<li><p>On the <strong>Specify group details</strong> page, under <strong>Basic configuration</strong>, choose <strong>Application Load Balancer</strong>.</p></li>
+<li><p>For <strong>Target group name</strong>, enter a name for the Application Load Balancer target group.</p></li>
+<li><p>For <strong>Protocol</strong>, only TCP is allowed. Select the <strong>Port</strong> for your target group. This target group port must match the listener port of the Application Load Balancer. Alternatively, you can add or edit the listener port on the Application Load Balancer to match this port.</p></li>
+<li><p>For <strong>VPC</strong>, select the virtual private cloud (VPC) with the Application Load Balancer to register with the target group.</p></li>
+<li><p>For <strong>Health checks</strong>, choose HTTP or HTTPS as the <strong>Health check protocol</strong>. Health checks are sent to the Application Load Balancer and forwarded to its targets using the specified port, protocol, and ping path. Ensure that your Application Load Balancer can receive these health checks by having a listener with a port and protocol that matches the health check port and protocol.</p></li>
+<li><p>(Optional) Add one or more tags as required.</p></li>
+<li><p>Choose <strong>Next</strong>.</p></li>
+<li><p>On the <strong>Register targets</strong> page, choose the Application Load Balancer that you want to register as the target. The Application Load Balancer you choose from the list must have a listener on the same port as the target group you’re creating. You can add or edit a listener on this load balancer to match the target group’s port or return to the previous step and change the port that’s specified for the target group. If you’re unsure about which Application Load Balancer to add as the target, or don’t want to add it at this point, you can choose to add the Application Load Balancer later.</p></li>
+<li><p>Choose <strong>Create target group</strong>.</p></li>
+</ol>
+<p><strong>Important</strong><br />
+If at any point you need to delete an Application Load Balancer, be aware that you can’t delete an Application Load Balancer that is registered as a target. To delete the Application Load Balancer, you must first deregister it from all target groups.</p>
+<p><strong>To create a target group and register the Application Load Balancer as a target, using the AWS CLI</strong><br />
+Use the <a href="https://docs.aws.amazon.com/cli/latest/reference/elbv2/create-target-group.html">create-target-group</a> and <a href="https://docs.aws.amazon.com/cli/latest/reference/elbv2/register-targets.html">register-targets</a> command.</p>
+<h2 id="step-3-create-a-network-load-balancer-and-configure-the-application-load-balancer-as-its-target">Step 3: Create a Network Load Balancer, and configure the Application Load Balancer as its target<a name="configure-application-load-balancer-target"></a></h2>
+<p>Use the following steps to create the Network Load Balancer and then configure the Application Load Balancer as its target using the console.</p>
+<p><strong>To create your Network Load Balancer and listener using the new console</strong></p>
+<ol type="1">
+<li><p>Open the Amazon EC2 console at <a href="https://console.aws.amazon.com/ec2/">https://console.aws.amazon.com/ec2/</a>.</p>
+<p>Note that for this feature, you must turn on the <strong>New EC2 Experience</strong>. Use the toggle button on the top left corner of the navigation pane to switch to the new console.</p></li>
+<li><p>On the navigation pane, under <strong>Load Balancing</strong>, choose <strong>Load Balancers</strong>.</p></li>
+<li><p>Choose <strong>Create Load Balancer</strong>.</p></li>
+<li><p>Under <strong>Network Load Balancer</strong>, choose <strong>Create</strong>.</p></li>
+<li><p><strong>Basic configuration</strong></p>
+<p>On the <strong>Create Network Load Balancer</strong> page, enter <strong>Basic configuration</strong> information such as <strong>Name</strong>, <strong>Scheme</strong>, and <strong>IP address type</strong>.</p></li>
+<li><p><strong>Network and security</strong></p>
+<ol type="1">
+<li><p>For <strong>VPC</strong>, select the same VPC that you used for your Application Load Balancer target. If you selected <strong>Internet-facing</strong> for <strong>Scheme</strong>, only VPCs with an internet gateway are available for selection.</p></li>
+<li><p>For <strong>Mappings</strong>, select one or more Availability Zones and corresponding subnets. We recommend that you select the same Availability Zones as your Application Load Balancer target to optimize availability, scaling, and performance.</p>
+<p>(Optional) To use static IP addresses, choose <strong>Use an Elastic IP address</strong> in the <strong>IPv4 settings</strong> for each Availability Zone. With static IP addresses you can add certain IPs to an allow list for firewalls, or you can hardcode IPs with clients.</p></li>
+</ol></li>
+<li><p><strong>Listeners and routing</strong></p>
+<ol type="1">
+<li><p>For <strong>Listeners</strong>, the default is a listener that accepts TCP traffic on port 80. Only TCP listeners can forward traffic to an Application Load Balancer target group. Keep the listener protocol set to TCP, but you can modify the port as required.</p>
+<p>This setup allows you to use HTTPS listeners on the Application Load Balancer to terminate the TLS protocol.</p></li>
+<li><p>For <strong>Default action</strong>, select the Application Load Balancer target group that you want to forward traffic to. If you don’t see it in the list, or can’t select a target group (because it is already in use by another Network Load Balancer), you can create a new Application Load Balancer target group as shown in <a href="#register-application-load-balancer-target">Step 2: Create the target group with the Application Load Balancer as the target</a>.</p></li>
+</ol></li>
+<li><p>Add tags (optional), review your configuration, and choose <strong>Create load balancer</strong>.</p></li>
+</ol>
+<p><strong>Important</strong><br />
+You can associate an Application Load Balancer as a target of a maximum of two Network Load Balancers. To do this, the Application Load Balancer must reside in separate target groups, and be assigned to two different Network Load Balancers.</p>
+<p>Note that each Application Load Balancer you put behind a Network Load Balancer decreases the maximum number of targets by 50 (if cross-zone load balancing is disabled) or 100 (if cross-zone load balancing is enabled). We recommend keeping cross-zone load balancing disabled to minimize latency and avoid regional data transfer charges. Refer to <a href="load-balancer-limits.html">Quotas for your Network Load Balancers</a> for baseline limits.</p>
+<p><strong>To create the Network Load Balancer using the AWS CLI</strong><br />
+Use the <a href="https://docs.aws.amazon.com/cli/latest/reference/elbv2/create-load-balancer.html">create-load-balancer</a> command.</p>
+<h2 id="step-4-optional-enable-vpc-endpoint-services-aws-privatelink">Step 4 (Optional): Enable VPC endpoint services (AWS PrivateLink)<a name="enable-privatelink"></a></h2>
+<p>To use the Network Load Balancer that you set up in the previous step as an endpoint for private connectivity, you can enable AWS PrivateLink. This establishes a private connection to your load balancer as an endpoint service.</p>
+<p>****To enable AWS PrivateLink on your Network Load Balancer****</p>
+<ol type="1">
+<li><p>On the navigation pane, under <strong>Load Balancing</strong>, choose <strong>Load Balancers</strong>.</p></li>
+<li><p>On the load balancers list page, select the Network Load Balancer to enable AWS PrivateLink.</p></li>
+<li><p>In the load balancer details section (below the list), choose the <strong>Integrated services</strong> tab.</p></li>
+<li><p>Scroll down to <strong>VPC Endpoint Services (AWS PrivateLink)</strong>.</p></li>
+<li><p>Choose <strong>Create Endpoint Services</strong>. For the remaining steps, see <a href="https://docs.aws.amazon.com/vpc/latest/privatelink/create-endpoint-service.html">Create a VPC endpoint service configuration for interface endpoints</a> in the <em>AWS PrivateLink Guide</em>.</p></li>
+</ol>
+</body>
+</html>

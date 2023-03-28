@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>delete-target-group</title>
+  <style>
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    span.underline{text-decoration: underline;}
+    div.column{display: inline-block; vertical-align: top; width: 50%;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    ul.task-list{list-style: none;}
+  </style>
+</head>
+<body>
+<h1 id="delete-a-target-group">Delete a target group<a name="delete-target-group"></a></h1>
+<p>You can delete a target group if it is not referenced by the forward actions of any listener rules. Deleting a target group does not affect the targets registered with the target group. If you no longer need a registered EC2 instance, you can stop or terminate it.</p>
+<table style="width:10%;">
+<colgroup>
+<col style="width: 9%" />
+</colgroup>
+<tbody>
+<tr class="odd">
+<td>#### [ New console ]</td>
+</tr>
+<tr class="even">
+<td><strong>To delete a target group using the new console</strong></td>
+</tr>
+<tr class="odd">
+<td>1. Open the Amazon EC2 console at <a href="https://console.aws.amazon.com/ec2/">https://console.aws.amazon.com/ec2/</a>.</td>
+</tr>
+<tr class="even">
+<td>1. In the navigation pane, under <strong>LOAD BALANCING</strong>, choose <strong>Target Groups</strong>.</td>
+</tr>
+<tr class="odd">
+<td>1. Select the target group and choose <strong>Actions</strong>, <strong>Delete</strong>.</td>
+</tr>
+<tr class="even">
+<td>1. When prompted for confirmation, choose <strong>Yes, delete</strong>.</td>
+</tr>
+</tbody>
+</table>
+<h4 id="old-console">[ Old console ]</h4>
+<p><strong>To delete a target group using the old console</strong></p>
+<ol type="1">
+<li><p>Open the Amazon EC2 console at <a href="https://console.aws.amazon.com/ec2/">https://console.aws.amazon.com/ec2/</a>.</p></li>
+<li><p>In the navigation pane, under <strong>LOAD BALANCING</strong>, choose <strong>Target Groups</strong>.</p></li>
+<li><p>Select the target group and choose <strong>Actions</strong>, <strong>Delete</strong>.</p></li>
+<li><p>When prompted for confirmation, choose <strong>Yes</strong>.</p></li>
+</ol>
+<hr />
+<p><strong>To delete a target group using the AWS CLI</strong><br />
+Use the <a href="https://docs.aws.amazon.com/cli/latest/reference/elbv2/delete-target-group.html">delete-target-group</a> command.</p>
+</body>
+</html>

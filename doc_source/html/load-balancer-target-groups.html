@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>load-balancer-target-groups</title>
+  <style>
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    span.underline{text-decoration: underline;}
+    div.column{display: inline-block; vertical-align: top; width: 50%;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    ul.task-list{list-style: none;}
+  </style>
+</head>
+<body>
+<h1 id="target-groups-for-your-network-load-balancers">Target groups for your Network Load Balancers<a name="load-balancer-target-groups"></a></h1>
+<p>Each <em>target group</em> is used to route requests to one or more registered targets. When you create a listener, you specify a target group for its default action. Traffic is forwarded to the target group specified in the listener rule. You can create different target groups for different types of requests. For example, create one target group for general requests and other target groups for requests to the microservices for your application. For more information, see <a href="introduction.html#network-load-balancer-components">Network Load Balancer components</a>.</p>
+<p>You define health check settings for your load balancer on a per target group basis. Each target group uses the default health check settings, unless you override them when you create the target group or modify them later on. After you specify a target group in a rule for a listener, the load balancer continually monitors the health of all targets registered with the target group that are in an Availability Zone enabled for the load balancer. The load balancer routes requests to the registered targets that are healthy. For more information, see <a href="target-group-health-checks.html">Health checks for your target groups</a>.</p>
+<p><strong>Topics</strong> + <a href="#target-group-routing-configuration">Routing configuration</a> + <a href="#target-type">Target type</a> + <a href="#target-group-ip-address-type">IP address type</a> + <a href="#registered-targets">Registered targets</a> + <a href="#target-group-attributes">Target group attributes</a> + <a href="#client-ip-preservation">Client IP preservation</a> + <a href="#deregistration-delay">Deregistration delay</a> + <a href="#proxy-protocol">Proxy protocol</a> + <a href="#sticky-sessions">Sticky sessions</a> + <a href="create-target-group.html">Create a target group for your Network Load Balancer</a> + <a href="target-group-health-checks.html">Health checks for your target groups</a> + <a href="target-group-cross-zone.html">Cross-zone load balancing for target groups</a> + <a href="target-group-health.html">Target group health</a> + <a href="target-group-register-targets.html">Register targets with your target group</a> + <a href="application-load-balancer-target.html">Application Load Balancers as targets</a> + <a href="target-group-tags.html">Tags for your target group</a> + <a href="delete-target-group.html">Delete a target group</a></p>
+<h2 id="routing-configuration">Routing configuration<a name="target-group-routing-configuration"></a></h2>
+<p>By default, a load balancer routes requests to its targets using the protocol and port number that you specified when you created the target group. Alternatively, you can override the port used for routing traffic to a target when you register it with the target group.</p>
+<p>Target groups for Network Load Balancers support the following protocols and ports: + <strong>Protocols</strong>: TCP, TLS, UDP, TCP_UDP + <strong>Ports</strong>: 1-65535</p>
+<p>If a target group is configured with the TLS protocol, the load balancer establishes TLS connections with the targets using certificates that you install on the targets. The load balancer does not validate these certificates. Therefore, you can use self-signed certificates or certificates that have expired. Because the load balancer is in a virtual private cloud (VPC), traffic between the load balancer and the targets is authenticated at the packet level, so it is not at risk of man-in-the-middle attacks or spoofing even if the certificates on the targets are not valid.</p>
+<p>The following table summarizes the supported combinations of listener protocol and target group settings.</p>
+<table>
+<colgroup>
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Listener protocol</th>
+<th>Target group protocol</th>
+<th>Target group type</th>
+<th>Health check protocol</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>TCP</td>
+<td>TCP | TCP_UDP</td>
+<td>instance | ip</td>
+<td>HTTP | HTTPS | TCP</td>
+</tr>
+<tr class="even">
+<td>TCP</td>
+<td>TCP</td>
+<td>alb</td>
+<td>HTTP | HTTPS</td>
+</tr>
+<tr class="odd">
+<td>TLS</td>
+<td>TCP | TLS</td>
+<td>instance | ip</td>
+<td>HTTP | HTTPS | TCP</td>
+</tr>
+<tr class="even">
+<td>UDP</td>
+<td>UDP | TCP_UDP</td>
+<td>instance | ip</td>
+<td>HTTP | HTTPS | TCP</td>
+</tr>
+<tr class="odd">
+<td>TCP_UDP</td>
+<td>TCP_UDP</td>
+<td>instance | ip</td>
+<td>HTTP | HTTPS | TCP</td>
+</tr>
+</tbody>
+</table>
+<h2 id="target-type">Target type<a name="target-type"></a></h2>
+<p>When you create a target group, you specify its target type, which determines how you specify its targets. After you create a target group, you can’t change its target type.</p>
+<p>The following are the possible target types:</p>
+<p><code>instance</code><br />
+The targets are specified by instance ID.</p>
+<p><code>ip</code><br />
+The targets are specified by IP address.</p>
+<p><code>alb</code><br />
+The target is an Application Load Balancer.</p>
+<p>When the target type is <code>ip</code>, you can specify IP addresses from one of the following CIDR blocks: + The subnets of the VPC for the target group + 10.0.0.0/8 (<a href="https://tools.ietf.org/html/rfc1918">RFC 1918</a>) + 100.64.0.0/10 (<a href="https://tools.ietf.org/html/rfc6598">RFC 6598</a>) + 172.16.0.0/12 (RFC 1918) + 192.168.0.0/16 (RFC 1918)</p>
+<p><strong>Important</strong><br />
+You can’t specify publicly routable IP addresses.</p>
+<p>All of the supported CIDR blocks enable you to register the following targets with a target group: + ClassicLink instances. For more information, see <a href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/vpc-classiclink.html">ClassicLink</a>, in the <em>Amazon EC2 User Guide for Linux Instances</em>. + AWS resources that are addressable by IP address and port (for example, databases). + On-premises resources linked to AWS through AWS Direct Connect or a Site-to-Site VPN connection.</p>
+<p>When client IP preservation is disabled for your target groups, the load balancer can support about 55,000 connections per minute for each combination of Network Load Balancer IP address and unique target (IP address and port). If you exceed these connections, there is an increased chance of port allocation errors. If you get port allocation errors, add more targets to the target group.</p>
+<p>When launching a Network Load Balancer in a shared Amazon VPC (as a participant), you can only register targets in subnets that have been shared with you.</p>
+<p>When the target type is <code>alb</code>, you can register a single Application Load Balancer as a target. For more information, see <a href="application-load-balancer-target.html">Application Load Balancers as targets</a>.</p>
+<p>Network Load Balancers do not support the <code>lambda</code> target type. Application Load Balancers are the only load balancers that support the <code>lambda</code> target type. For more information, see <a href="https://docs.aws.amazon.com/elasticloadbalancing/latest/application/lambda-functions.html">Lambda functions as targets</a> in the <em>User Guide for Application Load Balancers</em>.</p>
+<p>If you have microservices on instances that are registered with a Network Load Balancer, you can’t use the load balancer to provide communication between them unless the load balancer is internet-facing or the instances are registered by IP address. For more information, see <a href="load-balancer-troubleshooting.html#loopback-timeout">Connections time out for requests from a target to its load balancer</a>.</p>
+<h3 id="request-routing-and-ip-addresses">Request routing and IP addresses<a name="request-routing-ip-addresses"></a></h3>
+<p>If you specify targets using an instance ID, traffic is routed to instances using the primary private IP address that is specified in the primary network interface for the instance. The load balancer rewrites the destination IP address from the data packet before forwarding it to the target instance.</p>
+<p>If you specify targets using IP addresses, you can route traffic to an instance using any private IP address from one or more network interfaces. This enables multiple applications on an instance to use the same port. Note that each network interface can have its own security group. The load balancer rewrites the destination IP address before forwarding it to the target.</p>
+<p>For more information about allowing traffic to your instances, see <a href="target-group-register-targets.html#target-security-groups">Target security groups</a>.</p>
+<h2 id="ip-address-type">IP address type<a name="target-group-ip-address-type"></a></h2>
+<p>When creating a new target group, you can select the IP address type of your target group. This controls the IP version used to communicate with targets and check their health status.</p>
+<p>Network Load Balancers support both IPv4 and IPv6 target groups. The default selection is IPv4. IPv6 target groups can only be associated with dualstack Network Load Balancers.</p>
+<p><strong>Considerations</strong> + All IP addresses within a target group must have the same IP address type. For example, you can’t register an IPv4 target with an IPv6 target group. + IPv6 target groups can only be used with <code>dualstack</code> load balancers with TCP or a TLS listeners. + IPv6 target groups only support IP type targets.</p>
+<h2 id="registered-targets">Registered targets<a name="registered-targets"></a></h2>
+<p>Your load balancer serves as a single point of contact for clients and distributes incoming traffic across its healthy registered targets. Each target group must have at least one registered target in each Availability Zone that is enabled for the load balancer. You can register each target with one or more target groups.</p>
+<p>If demand on your application increases, you can register additional targets with one or more target groups in order to handle the demand. The load balancer starts routing traffic to a newly registered target as soon as the registration process completes.</p>
+<p>If demand on your application decreases, or if you need to service your targets, you can deregister targets from your target groups. Deregistering a target removes it from your target group, but does not affect the target otherwise. The load balancer stops routing traffic to a target as soon as it is deregistered. The target enters the <code>draining</code> state until in-flight requests have completed. You can register the target with the target group again when you are ready for it to resume receiving traffic.</p>
+<p>If you are registering targets by instance ID, you can use your load balancer with an Auto Scaling group. After you attach a target group to an Auto Scaling group, Auto Scaling registers your targets with the target group for you when it launches them. For more information, see <a href="https://docs.aws.amazon.com/autoscaling/ec2/userguide/attach-load-balancer-asg.html">Attaching a load balancer to your Auto Scaling group</a> in the <em>Amazon EC2 Auto Scaling User Guide</em>.</p>
+<p><strong>Requirements and considerations</strong> + You can’t register instances by instance ID if they use one of the following instance types: C1, CC1, CC2, CG1, CG2, CR1, G1, G2, HI1, HS1, M1, M2, M3, or T1. + You can’t register instances by instance ID if they are in a VPC that is peered to the load balancer VPC (same Region or different Region). You can register these instances by IP address. + If you register a target by IP address and the IP address is in the same VPC as the load balancer, the load balancer verifies that it is from a subnet that it can reach. + The load balancer routes traffic to targets only in Availability Zones that are enabled. Targets in zones that are not enabled are unused. + For UDP and TCP_UDP target groups, do not register instances by IP address if they reside outside of the load balancer VPC or if they use one of the following instance types: C1, CC1, CC2, CG1, CG2, CR1, G1, G2, HI1, HS1, M1, M2, M3, or T1. Targets that reside outside the load balancer VPC or use an unsupported instance type might be able to receive traffic from the load balancer but then be unable to respond.</p>
+<h2 id="target-group-attributes">Target group attributes<a name="target-group-attributes"></a></h2>
+<p>The following are the target group attributes:</p>
+<p><code>deregistration_delay.timeout_seconds</code><br />
+The amount of time for Elastic Load Balancing to wait before changing the state of a deregistering target from <code>draining</code> to <code>unused</code>. The range is 0-3600 seconds. The default value is 300 seconds.</p>
+<p><code>deregistration_delay.connection_termination.enabled</code><br />
+Indicates whether the load balancer terminates connections at the end of the deregistration timeout. The value is <code>true</code> or <code>false</code>. The default is <code>false</code>.</p>
+<p><code>load_balancing.cross_zone.enabled</code><br />
+Indicates whether cross zone load balancing is enabled. The value is <code>true</code>, <code>false</code> or <code>use_load_balancer_configuration</code>. The default is <code>use_load_balancer_configuration</code>.</p>
+<p><code>preserve_client_ip.enabled</code><br />
+Indicates whether client IP preservation is enabled. The value is <code>true</code> or <code>false</code>. The default is disabled if the target group type is IP address and the target group protocol is TCP or TLS. Otherwise, the default is enabled. Client IP preservation can’t be disabled for UDP and TCP_UDP target groups.</p>
+<p><code>proxy_protocol_v2.enabled</code><br />
+Indicates whether proxy protocol version 2 is enabled. By default, proxy protocol is disabled.</p>
+<p><code>stickiness.enabled</code><br />
+Indicates whether sticky sessions are enabled.</p>
+<p><code>stickiness.type</code><br />
+The type of stickiness. The possible value is <code>source_ip</code>.</p>
+<p><code>target_group_health.dns_failover.minimum_healthy_targets.count</code><br />
+The minimum number of targets that must be healthy. If the number of healthy targets is below this value, mark the zone as unhealthy in DNS, so that traffic is routed only to healthy zones. The possible values are <code>off</code> or an integer from 1 to the maximum number of targets. The default is <code>off</code>.</p>
+<p><code>target_group_health.dns_failover.minimum_healthy_targets.percentage</code><br />
+The minimum percentage of targets that must be healthy. If the percentage of healthy targets is below this value, mark the zone as unhealthy in DNS, so that traffic is routed only to healthy zones. The possible values are <code>off</code> or an integer from 1 to 100. The default is <code>off</code>.</p>
+<p><code>target_group_health.unhealthy_state_routing.minimum_healthy_targets.count</code><br />
+The minimum number of targets that must be healthy. If the number of healthy targets is below this value, send traffic to all targets, including unhealthy targets. The range is 1 to the maximum number of targets. The default is 1.</p>
+<p><code>target_group_health.unhealthy_state_routing.minimum_healthy_targets.percentage</code><br />
+The minimum percentage of targets that must be healthy. If the percentage of healthy targets is below this value, send traffic to all targets, including unhealthy targets. The possible values are <code>off</code> or an integer from 1 to 100. The default is <code>off</code>.</p>
+<h2 id="client-ip-preservation">Client IP preservation<a name="client-ip-preservation"></a></h2>
+<p>Network Load Balancers can preserve the source IP address of clients when routing requests to backend targets. When you disable client IP preservation, the private IP address of the Network Load Balancer becomes the client IP address for all incoming traffic.</p>
+<p>By default, client IP preservation is enabled (and can’t be disabled) for instance and IP type target groups with UDP and TCP_UDP protocols. However, you can enable or disable client IP preservation for TCP and TLS target groups using the <code>preserve_client_ip.enabled</code> target group attribute.</p>
+<p><strong>Default settings</strong> + Instance type target groups: Enabled + IP type target groups (UDP, TCP_UDP): Enabled + IP type target groups (TCP, TLS): Disabled</p>
+<p><strong>Requirements and considerations</strong> + When client IP preservation is enabled, targets must be in the same VPC as the Network Load Balancer, and traffic must flow directly from the Network Load Balancer to the target. + Client IP preservation is not supported when traffic is routed through a Gateway Load Balancer endpoint, even if the target is in the same VPC as the Network Load Balancer. + The following instance types do not support client IP preservation: C1, CC1, CC2, CG1, CG2, CR1, G1, G2, HI1, HS1, M1, M2, M3, and T1. We recommend that you register these instance types as IP addresses with client IP preservation disabled. + Client IP preservation has no effect on inbound traffic from AWS PrivateLink. The source IP of the AWS PrivateLink traffic is always the private IP address of the Network Load Balancer. + Client IP preservation is not supported when a target group contains AWS PrivateLink ENIs, or the ENI of another Network Load Balancer. This will cause loss of communication to those targets. + Client IP preservation has no effect on traffic converted from IPv6 to IPv4. The source IP of this type of traffic is always the private IP address of the Network Load Balancer. + When you specify targets by Application Load Balancer type, the client IP of all incoming traffic is preserved by the Network Load Balancer and is sent to the Application Load Balancer. The Application Load Balancer then appends the client IP to the <code>X-Forwarded-For</code> request header before sending it to the target. + Client IP preservation changes take effect only for new TCP connections. + When client IP preservation is enabled, you might encounter TCP/IP connection limitations related to observed socket reuse on the targets. These connection limitations can occur when a client, or a NAT device in front of the client, uses the same source IP address and source port when connecting to multiple load balancer nodes simultaneously. If the load balancer routes these connections to the same target, the connections appear to the target as if they come from the same source socket, which results in connection errors. If this happens, the clients can retry (if the connection fails) or reconnect (if the connection is interrupted). You can reduce this type of connection error by increasing the number of source ephemeral ports or by increasing the number of targets for the load balancer. You can prevent this type of connection error, by disabling client IP preservation or disabling cross-zone load balancing. + Your Network Load Balancer supports 55,000 simultaneous connections or about 55,000 connections per minute to each unique target (IP address and port). If you exceed these connections, there is an increased chance of port allocation errors, resulting in failures to establish new connections. Port allocation errors can be tracked using the <code>PortAllocationErrorCount</code> metric. To fix port allocation errors, add more targets to the target group. For more information, see <a href="load-balancer-cloudwatch-metrics.html">CloudWatch metrics for your Network Load Balancer</a>.</p>
+<table style="width:10%;">
+<colgroup>
+<col style="width: 9%" />
+</colgroup>
+<tbody>
+<tr class="odd">
+<td>#### [ New console ]</td>
+</tr>
+<tr class="even">
+<td><strong>To configure client IP preservation using the new console</strong></td>
+</tr>
+<tr class="odd">
+<td>1. Open the Amazon EC2 console at <a href="https://console.aws.amazon.com/ec2/">https://console.aws.amazon.com/ec2/</a>.</td>
+</tr>
+<tr class="even">
+<td>1. On the navigation pane, under <strong>Load Balancing</strong>, choose <strong>Target Groups</strong>.</td>
+</tr>
+<tr class="odd">
+<td>1. Choose the name of the target group to open its details page.</td>
+</tr>
+<tr class="even">
+<td>1. On the <strong>Attributes</strong> tab, choose <strong>Edit</strong>.</td>
+</tr>
+<tr class="odd">
+<td>1. To enable client IP preservation, turn on <strong>Preserve client IP addresses</strong>. To disable client IP preservation, turn off <strong>Preserve client IP addresses</strong>.</td>
+</tr>
+<tr class="even">
+<td>1. Choose <strong>Save changes</strong>.</td>
+</tr>
+</tbody>
+</table>
+<h4 id="old-console">[ Old console ]</h4>
+<p><strong>To configure client IP preservation using the old console</strong></p>
+<ol type="1">
+<li><p>Open the Amazon EC2 console at <a href="https://console.aws.amazon.com/ec2/">https://console.aws.amazon.com/ec2/</a>.</p></li>
+<li><p>On the navigation pane, under <strong>LOAD BALANCING</strong>, choose <strong>Target Groups</strong>.</p></li>
+<li><p>Select the target group and choose <strong>Description</strong>, <strong>Edit attributes</strong>.</p></li>
+<li><p>To enable client IP preservation, select <strong>Preserve client IP addresses</strong>. To disable client IP preservation, clear <strong>Preserve client IP addresses</strong>.</p></li>
+<li><p>Choose <strong>Save</strong>.</p></li>
+</ol>
+<hr />
+<p><strong>To enable or disable client IP preservation using the AWS CLI</strong><br />
+Use the <a href="https://docs.aws.amazon.com/cli/latest/reference/elbv2/modify-target-group-attributes.html">modify-target-group-attributes</a> command with the <code>preserve_client_ip.enabled</code> attribute.</p>
+<p>For example, use the following command to disable client IP preservation.</p>
+<pre><code>aws elbv2 modify-target-group-attributes --attributes Key=preserve_client_ip.enabled,Value=false --target-group-arn ARN</code></pre>
+<p>Your output should be similar to the following example.</p>
+<pre><code>{
+    &quot;Attributes&quot;: [
+      {
+        &quot;Key&quot;: &quot;proxy_protocol_v2.enabled&quot;, 
+        &quot;Value&quot;: &quot;false&quot;
+      }, 
+      {
+        &quot;Key&quot;: &quot;preserve_client_ip.enabled&quot;, 
+        &quot;Value&quot;: &quot;false&quot; 
+      },
+      {
+        &quot;Key&quot;: &quot;deregistration_delay.timeout_seconds&quot;, 
+        &quot;Value&quot;: &quot;300&quot;
+      } 
+    ]
+}</code></pre>
+<h2 id="deregistration-delay">Deregistration delay<a name="deregistration-delay"></a></h2>
+<p>When you deregister a target, the load balancer stops creating new connections to the target. The load balancer uses connection draining to ensure that in-flight traffic completes on the existing connections. If the deregistered target stays healthy and an existing connection is not idle, the load balancer can continue to send traffic to the target. To ensure that existing connections are closed, you can do one of the following: enable the target group attribute for connection termination, ensure that the instance is unhealthy before you deregister it, or periodically close client connections.</p>
+<p>The initial state of a deregistering target is <code>draining</code>. By default, the load balancer changes the state of a deregistering target to <code>unused</code> after 300 seconds. To change the amount of time that the load balancer waits before changing the state of a deregistering target to <code>unused</code>, update the deregistration delay value. We recommend that you specify a value of at least 120 seconds to ensure that requests are completed.</p>
+<p>If you enable the target group attribute for connection termination, connections to deregistered targets are closed shortly after the end of the deregistration timeout.</p>
+<table style="width:10%;">
+<colgroup>
+<col style="width: 9%" />
+</colgroup>
+<tbody>
+<tr class="odd">
+<td>#### [ New console ]</td>
+</tr>
+<tr class="even">
+<td><strong>To update the deregistration attributes using the new console</strong></td>
+</tr>
+<tr class="odd">
+<td>1. Open the Amazon EC2 console at <a href="https://console.aws.amazon.com/ec2/">https://console.aws.amazon.com/ec2/</a>.</td>
+</tr>
+<tr class="even">
+<td>1. On the navigation pane, under <strong>LOAD BALANCING</strong>, choose <strong>Target Groups</strong>.</td>
+</tr>
+<tr class="odd">
+<td>1. Choose the name of the target group to open its details page.</td>
+</tr>
+<tr class="even">
+<td>1. On <strong>Attributes</strong> tab, choose <strong>Edit</strong>.</td>
+</tr>
+<tr class="odd">
+<td>1. To change the deregistration timeout, enter a new value for <strong>Deregistration delay</strong>. To ensure that existing connections are closed after you deregister targets, select <strong>Terminate connections on deregistration</strong>.</td>
+</tr>
+<tr class="even">
+<td>1. Choose <strong>Save changes</strong>.</td>
+</tr>
+</tbody>
+</table>
+<h4 id="old-console-1">[ Old console ]</h4>
+<p><strong>To update the deregistration attributes using the old console</strong></p>
+<ol type="1">
+<li><p>Open the Amazon EC2 console at <a href="https://console.aws.amazon.com/ec2/">https://console.aws.amazon.com/ec2/</a>.</p></li>
+<li><p>On the navigation pane, under <strong>LOAD BALANCING</strong>, choose <strong>Target Groups</strong>.</p></li>
+<li><p>Select the target group and choose <strong>Description</strong>, <strong>Edit attributes</strong>.</p></li>
+<li><p>To change the deregistration timeout, enter a new value for <strong>Deregistration delay</strong>. To ensure that existing connections are closed after you deregister targets, select <strong>Connection termination on deregistration</strong>.</p></li>
+<li><p>Choose <strong>Save</strong>.</p></li>
+</ol>
+<hr />
+<p><strong>To update the deregistration attributes using the AWS CLI</strong><br />
+Use the <a href="https://docs.aws.amazon.com/cli/latest/reference/elbv2/modify-target-group-attributes.html">modify-target-group-attributes</a> command.</p>
+<h2 id="proxy-protocol">Proxy protocol<a name="proxy-protocol"></a></h2>
+<p>Network Load Balancers use proxy protocol version 2 to send additional connection information such as the source and destination. Proxy protocol version 2 provides a binary encoding of the proxy protocol header. The load balancer prepends a proxy protocol header to the TCP data. It does not discard or overwrite any existing data, including any proxy protocol headers sent by the client or any other proxies, load balancers, or servers in the network path. Therefore, it is possible to receive more than one proxy protocol header. Also, if there is another network path to your targets outside of your Network Load Balancer, the first proxy protocol header might not be the one from your Network Load Balancer.</p>
+<p>If you specify targets by IP address, the source IP addresses provided to your applications depend on the protocol of the target group as follows: + TCP and TLS: The source IP addresses are the private IP addresses of the load balancer nodes. If you need the IP addresses of the clients, enable proxy protocol and get the client IP addresses from the proxy protocol header. + UDP and TCP_UDP: The source IP addresses are the IP addresses of the clients.</p>
+<p>If you specify targets by instance ID, the source IP addresses provided to your applications are the client IP addresses. However, if you prefer, you can enable proxy protocol and get the client IP addresses from the proxy protocol header.</p>
+<h3 id="health-check-connections">Health check connections<a name="health-check-connections"></a></h3>
+<p>After you enable proxy protocol, the proxy protocol header is also included in health check connections from the load balancer. However, with health check connections, the client connection information is not sent in the proxy protocol header.</p>
+<h3 id="vpc-endpoint-services">VPC endpoint services<a name="custom-tlv"></a></h3>
+<p>For traffic coming from service consumers through a <a href="https://docs.aws.amazon.com/vpc/latest/userguide/endpoint-service.html">VPC endpoint service</a>, the source IP addresses provided to your applications are the private IP addresses of the load balancer nodes. If your applications need the IP addresses of the service consumers, enable proxy protocol and get them from the proxy protocol header.</p>
+<p>The proxy protocol header also includes the ID of the endpoint. This information is encoded using a custom Type-Length-Value (TLV) vector as follows.</p>
+<p><a href="http://docs.aws.amazon.com/elasticloadbalancing/latest/network/load-balancer-target-groups.html">[See the AWS documentation website for more details]</a></p>
+<p>For an example that parses TLV type 0xEA, see <a href="https://github.com/aws/elastic-load-balancing-tools/tree/master/proprot">https://github.com/aws/elastic-load-balancing-tools/tree/master/proprot</a>.</p>
+<h3 id="enable-proxy-protocol">Enable proxy protocol<a name="enable-proxy-protocol"></a></h3>
+<p>Before you enable proxy protocol on a target group, make sure that your applications expect and can parse the proxy protocol v2 header, otherwise, they might fail. For more information, see <a href="https://www.haproxy.org/download/1.8/doc/proxy-protocol.txt">PROXY protocol versions 1 and 2</a>.</p>
+<table style="width:10%;">
+<colgroup>
+<col style="width: 9%" />
+</colgroup>
+<tbody>
+<tr class="odd">
+<td>#### [ New console ]</td>
+</tr>
+<tr class="even">
+<td><strong>To enable proxy protocol v2 using the new console</strong></td>
+</tr>
+<tr class="odd">
+<td>1. Open the Amazon EC2 console at <a href="https://console.aws.amazon.com/ec2/">https://console.aws.amazon.com/ec2/</a>.</td>
+</tr>
+<tr class="even">
+<td>1. On the navigation pane, under <strong>LOAD BALANCING</strong>, choose <strong>Target Groups</strong>.</td>
+</tr>
+<tr class="odd">
+<td>1. Choose the name the target group to open its details page.</td>
+</tr>
+<tr class="even">
+<td>1. On the <strong>Attributes</strong> tab, choose <strong>Edit</strong>.</td>
+</tr>
+<tr class="odd">
+<td>1. On the <strong>Edit attributes</strong> page, select <strong>Proxy protocol v2</strong>.</td>
+</tr>
+<tr class="even">
+<td>1. Choose <strong>Save changes</strong>.</td>
+</tr>
+</tbody>
+</table>
+<h4 id="old-console-2">[ Old console ]</h4>
+<p><strong>To enable proxy protocol v2 using the old console</strong></p>
+<ol type="1">
+<li><p>Open the Amazon EC2 console at <a href="https://console.aws.amazon.com/ec2/">https://console.aws.amazon.com/ec2/</a>.</p></li>
+<li><p>On the navigation pane, under <strong>LOAD BALANCING</strong>, choose <strong>Target Groups</strong>.</p></li>
+<li><p>Select the target group.</p></li>
+<li><p>Choose <strong>Description</strong>, <strong>Edit attributes</strong>.</p></li>
+<li><p>For <strong>Proxy protocol v2</strong>, choose <strong>Enable</strong>.</p></li>
+<li><p>Choose <strong>Save</strong>.</p></li>
+</ol>
+<hr />
+<p><strong>To enable proxy protocol v2 using the AWS CLI</strong><br />
+Use the <a href="https://docs.aws.amazon.com/cli/latest/reference/elbv2/modify-target-group-attributes.html">modify-target-group-attributes</a> command.</p>
+<h2 id="sticky-sessions">Sticky sessions<a name="sticky-sessions"></a></h2>
+<p>Sticky sessions are a mechanism to route client traffic to the same target in a target group. This is useful for servers that maintain state information in order to provide a continuous experience to clients.</p>
+<p><strong>Considerations</strong> + Using sticky sessions can lead to an uneven distribution of connections and flows, which might impact the availability of your targets. For example, all clients behind the same NAT device have the same source IP address. Therefore, all traffic from these clients is routed to the same target. + The load balancer might reset the sticky sessions for a target group if the health state of any of its targets changes or if you register or deregister targets with the target group. + Sticky sessions are not supported with TLS listeners and TLS target groups.</p>
+<table style="width:10%;">
+<colgroup>
+<col style="width: 9%" />
+</colgroup>
+<tbody>
+<tr class="odd">
+<td>#### [ New console ]</td>
+</tr>
+<tr class="even">
+<td><strong>To enable sticky sessions using the new console</strong></td>
+</tr>
+<tr class="odd">
+<td>1. Open the Amazon EC2 console at <a href="https://console.aws.amazon.com/ec2/">https://console.aws.amazon.com/ec2/</a>.</td>
+</tr>
+<tr class="even">
+<td>1. On the navigation pane, under <strong>LOAD BALANCING</strong>, choose <strong>Target Groups</strong>.</td>
+</tr>
+<tr class="odd">
+<td>1. Choose the name of the target group to open its details page.</td>
+</tr>
+<tr class="even">
+<td>1. On the <strong>Attributes</strong> tab, choose <strong>Edit</strong>.</td>
+</tr>
+<tr class="odd">
+<td>1. Under <strong>Target selection configuration</strong>, turn on <strong>Stickiness</strong>.</td>
+</tr>
+<tr class="even">
+<td>1. Choose <strong>Save changes</strong>.</td>
+</tr>
+</tbody>
+</table>
+<h4 id="old-console-3">[ Old console ]</h4>
+<p><strong>To enable sticky sessions using the old console</strong></p>
+<ol type="1">
+<li><p>Open the Amazon EC2 console at <a href="https://console.aws.amazon.com/ec2/">https://console.aws.amazon.com/ec2/</a>.</p></li>
+<li><p>On the navigation pane, under <strong>LOAD BALANCING</strong>, choose <strong>Target Groups</strong>.</p></li>
+<li><p>Select the target group.</p></li>
+<li><p>Choose <strong>Description</strong>, <strong>Edit attributes</strong>.</p></li>
+<li><p>For <strong>Stickiness</strong>, select <strong>Enable</strong>.</p></li>
+<li><p>Choose <strong>Save</strong>.</p></li>
+</ol>
+<hr />
+<p><strong>To enable sticky sessions using the AWS CLI</strong><br />
+Use the <a href="https://docs.aws.amazon.com/cli/latest/reference/elbv2/modify-target-group-attributes.html">modify-target-group-attributes</a> command with the <code>stickiness.enabled</code> attribute.</p>
+</body>
+</html>

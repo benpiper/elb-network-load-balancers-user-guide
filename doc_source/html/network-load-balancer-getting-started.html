@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>network-load-balancer-getting-started</title>
+  <style>
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    span.underline{text-decoration: underline;}
+    div.column{display: inline-block; vertical-align: top; width: 50%;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    ul.task-list{list-style: none;}
+  </style>
+</head>
+<body>
+<h1 id="getting-started-with-network-load-balancers">Getting started with Network Load Balancers<a name="network-load-balancer-getting-started"></a></h1>
+<p>This tutorial provides a hands-on introduction to Network Load Balancers through the AWS Management Console, a web-based interface. To create your first Network Load Balancer, complete the following steps.</p>
+<p><strong>Topics</strong> + <a href="#prerequisites">Before you begin</a> + <a href="#configure-target-group">Step 1: Configure your target group</a> + <a href="#select-load-balancer-type">Step 2: Choose a load balancer type</a> + <a href="#configure-load-balancer-listener">Step 3: Configure your load balancer and listener</a> + <a href="#test-load-balancer">Step 4: Test your load balancer</a> + <a href="#delete-load-balancer">Step 5: (Optional) Delete your load balancer</a></p>
+<p>For demos of common load balancer configurations, see <a href="https://exampleloadbalancer.com/">Elastic Load Balancing Demos</a>.</p>
+<h2 id="before-you-begin">Before you begin<a name="prerequisites"></a></h2>
+<ul>
+<li>Decide which Availability Zones you will use for your EC2 instances. Configure your virtual private cloud (VPC) with at least one public subnet in each of these Availability Zones. These public subnets are used to configure the load balancer. You can launch your EC2 instances in other subnets of these Availability Zones instead.</li>
+<li>Launch at least one EC2 instance in each Availability Zone. Ensure that the security groups for these instances allow TCP access from clients on the listener port and health check requests from your VPC. For more information, see <a href="target-group-register-targets.html#target-security-groups">Target security groups</a>.</li>
+</ul>
+<h2 id="step-1-configure-your-target-group">Step 1: Configure your target group<a name="configure-target-group"></a></h2>
+<p>Create a target group, which is used in request routing. The rule for your listener routes requests to the registered targets in this target group. The load balancer checks the health of targets in this target group using the health check settings defined for the target group.</p>
+<p><strong>To configure your target group</strong></p>
+<ol type="1">
+<li><p>Open the Amazon EC2 console at <a href="https://console.aws.amazon.com/ec2/">https://console.aws.amazon.com/ec2/</a>.</p></li>
+<li><p>In the navigation pane, under <strong>Load Balancing</strong>, choose <strong>Target Groups</strong>.</p></li>
+<li><p>Choose <strong>Create target group</strong>.</p></li>
+<li><p>Keep the target type as <strong>instances</strong>.</p></li>
+<li><p>For <strong>Target group name</strong>, enter a name for the new target group.</p></li>
+<li><p>For <strong>Protocol</strong>, choose <strong>TCP</strong>, and for <strong>Port</strong>, choose <strong>80</strong>.</p></li>
+<li><p>For <strong>VPC</strong> select the VPC that contains your instances. Keep <strong>Protocol version</strong> as <strong>HTTP1</strong>.</p></li>
+<li><p>For <strong>Health checks</strong>, keep the default settings.</p></li>
+<li><p>Choose <strong>Next</strong>.</p></li>
+<li><p>On the <strong>Register targets</strong> page, complete the following steps. This is an optional step to create a target group. However, you must register your targets if you want to test your load balancer and ensure that it is routing traffic to your targets.</p>
+<ol type="1">
+<li><p>For <strong>Available instances</strong>, select one or more instances.</p></li>
+<li><p>Keep the default port 80, and choose <strong>Include as pending below</strong>.</p></li>
+</ol></li>
+<li><p>Choose <strong>Create target group</strong>.</p></li>
+</ol>
+<h2 id="step-2-choose-a-load-balancer-type">Step 2: Choose a load balancer type<a name="select-load-balancer-type"></a></h2>
+<p>Elastic Load Balancing supports different types of load balancers. For this tutorial, you create a Network Load Balancer.</p>
+<p><strong>To create a Network Load Balancer</strong></p>
+<ol type="1">
+<li><p>Open the Amazon EC2 console at <a href="https://console.aws.amazon.com/ec2/">https://console.aws.amazon.com/ec2/</a>.</p></li>
+<li><p>On the navigation bar, choose a Region for your load balancer. Be sure to choose the same Region that you used for your EC2 instances.</p></li>
+<li><p>In the navigation pane, under <strong>Load Balancing</strong>, choose <strong>Load Balancers</strong>.</p></li>
+<li><p>Choose <strong>Create load balancer</strong>.</p></li>
+<li><p>For <strong>Network Load Balancer</strong>, choose <strong>Create</strong>.</p></li>
+</ol>
+<h2 id="step-3-configure-your-load-balancer-and-listener">Step 3: Configure your load balancer and listener<a name="configure-load-balancer-listener"></a></h2>
+<p>To create a Network Load Balancer, you must first provide basic configuration information for your load balancer, such as a name, scheme, and IP address type. Then provide information about your network, and one or more listeners. A listener is a process that checks for connection requests. It is configured with a protocol and a port for connections from clients to the load balancer. For more information about supported protocols and ports, see <a href="load-balancer-listeners.html#listener-configuration">Listener configuration</a>.</p>
+<p><strong>To configure your load balancer and listener</strong></p>
+<ol type="1">
+<li><p>For <strong>Load balancer name</strong>, enter a name for your load balancer. For example, <code>my-nlb</code>.</p></li>
+<li><p>For <strong>Scheme</strong> and <strong>IP address type</strong>, keep the default values.</p></li>
+<li><p>For <strong>Network mapping</strong>, select the VPC that you used for your EC2 instances. For each Availability Zone that you used to launch your EC2 instances, select the Availability Zone and then select one public subnet for that Availability Zone.</p>
+<p>By default, AWS assigns an IPv4 address to each load balancer node from the subnet for its Availability Zone. Alternatively, when you create an internet-facing load balancer, you can select an Elastic IP address for each Availability Zone. This provides your load balancer with static IP addresses.</p></li>
+<li><p>For <strong>Listeners and routing</strong>, keep the default protocol and port, and select your target group from the list. This configures a listener that accepts TCP traffic on port 80 and forwards traffic to the selected target group by default.</p></li>
+<li><p>For <strong>Default action</strong>, select the target group that you created and registered in step 1.</p></li>
+<li><p>(Optional) Add tags to categorize your load balancer. Tag keys must be unique for each load balancer. Allowed characters are letters, spaces, numbers (in UTF-8), and the following special characters: + - = . _ : / @. Do not use leading or trailing spaces. Tag values are case-sensitive.</p></li>
+<li><p>Review your configuration, and choose <strong>Create load balancer</strong>. A few default attributes are applied to your load balancer during creation. You can view and edit them after creating the load balancer. For more information, see <a href="network-load-balancers.html#load-balancer-attributes">Load balancer attributes</a>.</p></li>
+</ol>
+<h2 id="step-4-test-your-load-balancer">Step 4: Test your load balancer<a name="test-load-balancer"></a></h2>
+<p>After creating the load balancer, verify that it’s sending traffic to your EC2 instances.</p>
+<p><strong>To test your load balancer</strong></p>
+<ol type="1">
+<li><p>After you are notified that your load balancer was created successfully, choose <strong>Close</strong>.</p></li>
+<li><p>In the navigation pane, under <strong>Load Balancing</strong>, choose <strong>Target Groups</strong>.</p></li>
+<li><p>Select the newly created target group.</p></li>
+<li><p>Choose <strong>Targets</strong> and verify that your instances are ready. If the status of an instance is <code>initial</code>, it’s probably because the instance is still in the process of being registered, or it has not passed the minimum number of health checks to be considered healthy. After the status of at least one instance is <code>healthy</code>, you can test your load balancer.</p></li>
+<li><p>In the navigation pane, under <strong>Load Balancing</strong>, choose <strong>Load Balancers</strong>.</p></li>
+<li><p>Select the name of the newly created load balancer to open its details page.</p></li>
+<li><p>Copy the DNS name of the load balancer (for example, my-load-balancer-1234567890abcdef.elb.us-east-2.amazonaws.com). Paste the DNS name into the address field of an internet-connected web browser. If everything is working, the browser displays the default page of your server.</p></li>
+</ol>
+<h2 id="step-5-optional-delete-your-load-balancer">Step 5: (Optional) Delete your load balancer<a name="delete-load-balancer"></a></h2>
+<p>As soon as your load balancer becomes available, you are billed for each hour or partial hour that you keep it running. When you no longer need a load balancer, you can delete it. As soon as the load balancer is deleted, you stop incurring charges for it. Note that deleting a load balancer does not affect the targets registered with the load balancer. For example, your EC2 instances continue to run.</p>
+<p><strong>To delete your load balancer</strong></p>
+<ol type="1">
+<li><p>Open the Amazon EC2 console at <a href="https://console.aws.amazon.com/ec2/">https://console.aws.amazon.com/ec2/</a>.</p></li>
+<li><p>In the navigation pane, under <strong>Load Balancing</strong>, choose <strong>Load Balancers</strong>.</p></li>
+<li><p>Select the checkbox for the load balancer, and choose <strong>Actions</strong>, <strong>Delete</strong>.</p></li>
+<li><p>When prompted for confirmation, enter <strong>confirm</strong> and choose <strong>Delete</strong>.</p></li>
+</ol>
+</body>
+</html>
